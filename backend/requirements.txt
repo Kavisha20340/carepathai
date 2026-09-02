@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+google-cloud-aiplatform
+google-cloud-speech
+python-dotenv
+python-multipart
+httpx
+googlemaps
+firebase-admin
+
+

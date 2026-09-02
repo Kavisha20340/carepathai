@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow session reads/writes only by the authenticated user who owns the session.
+    // The session document ID corresponds to the user's uid.
+    match /sessions/{sessionId} {
+      allow read, write: if request.auth != null && request.auth.uid == sessionId;
+    }
+  }
+}
