@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { FaMicrophone, FaStop, FaPaperPlane, FaExclamationTriangle } from 'react-icons/fa'
 import { useStore } from '../store/useStore'
+import { translations } from '../utils/translations'
 
 export default function MicInput() {
   const { isLoading, transcribeAudio, submitTriageTurn, error, setError, setIsRecording, language } = useStore()
@@ -11,10 +12,11 @@ export default function MicInput() {
   const audioChunksRef = useRef([])
 
   useEffect(() => {
-    if (error === "Speech-to-text was unable to capture any words. Please try speaking again.") {
+    const isNoSpeechError = error === translations.en.errNoSpeech || error === translations.hi.errNoSpeech
+    if (isNoSpeechError) {
       const timer = setTimeout(() => {
         setError(null)
-      }, 2000)
+      }, 3000)
       return () => clearTimeout(timer)
     }
   }, [error, setError])
@@ -157,7 +159,7 @@ export default function MicInput() {
         </button>
       </form>
 
-      {error && error === "Speech-to-text was unable to capture any words. Please try speaking again." && (
+      {error && (error === translations.en.errNoSpeech || error === translations.hi.errNoSpeech) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl max-w-sm w-full border border-gray-100 dark:border-gray-700 text-center animate-scaleIn">
             <div className="w-12 h-12 bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -170,7 +172,7 @@ export default function MicInput() {
         </div>
       )}
 
-      {error && error !== "Speech-to-text was unable to capture any words. Please try speaking again." && (
+      {error && error !== translations.en.errNoSpeech && error !== translations.hi.errNoSpeech && (
         <div className="mt-4 flex gap-2 p-3 bg-red-50 text-red-700 rounded-xl text-sm">
           <FaExclamationTriangle className="mt-0.5 flex-shrink-0" />
           <span>{error}</span>

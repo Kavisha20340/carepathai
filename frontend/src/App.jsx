@@ -16,7 +16,8 @@ function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const t = translations[language || 'en'];
+  const isLandingPath = location.pathname === '/';
+  const t = translations[isLandingPath ? 'en' : (language || 'en')];
 
   useEffect(() => {
     if (location.pathname === '/triage' && !language) {
@@ -32,8 +33,6 @@ function AppContent() {
   const isTriagePath = location.pathname === '/triage';
 
   const isResultsView = triageResult && location.pathname === '/triage';
-
-  const isLandingPath = location.pathname === '/';
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 flex flex-col font-sans transition-colors duration-200">

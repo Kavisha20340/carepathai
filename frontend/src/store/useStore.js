@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import axios from 'axios'
+import { translations } from '../utils/translations'
 
 // API Base URL - points to our running local backend
 const API_BASE_URL = 'http://127.0.0.1:8000'
@@ -153,7 +154,9 @@ export const useStore = create((set, get) => ({
 
       const transcript = response.data.transcript
       if (!transcript || transcript.trim() === '') {
-        throw new Error("Speech-to-text was unable to capture any words. Please try speaking again.")
+        const lang = get().language || 'en'
+        const errMsg = translations[lang]?.errNoSpeech || translations.en.errNoSpeech
+        throw new Error(errMsg)
       }
 
       set({ isLoading: false })

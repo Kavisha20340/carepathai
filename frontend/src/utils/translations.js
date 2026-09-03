@@ -26,6 +26,7 @@ export const translations = {
     btnRecording: "Recording... Click to Stop",
     btnStopping: "Saving audio...",
     btnAnalyzing: "Analyzing symptoms...",
+    errNoSpeech: "Speech-to-text was unable to capture any words. Please try speaking again.",
 
     // Step 2: Structured Results (TriageCard)
     triageSuccess: "Triage Succeeded & Saved to Firestore",
@@ -108,6 +109,7 @@ export const translations = {
     btnRecording: "रिकॉर्डिंग हो रही है... रोकने के लिए क्लिक करें",
     btnStopping: "ऑडियो सेव हो रहा है...",
     btnAnalyzing: "लक्षणों का विश्लेषण हो रहा है...",
+    errNoSpeech: "आपकी आवाज़ पहचानी नहीं जा सकी। कृपया पुनः बोलने का प्रयास करें।",
 
     // Step 2: Structured Results (TriageCard)
     triageSuccess: "ट्राइएज सफल रहा और फायरस्टोर में सुरक्षित किया गया",
