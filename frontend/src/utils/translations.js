@@ -118,25 +118,25 @@ export const translations = {
     bodyLocation: "शरीर का हिस्सा",
     onset: "शुरुआत",
     duration: "अवधि",
-    severity: "दर्द की तीव्रता (Severity)",
+    severity: "दर्द की तीव्रता",
     associatedSymptoms: "संबंधित लक्षण",
     aggravatingFactors: "बढ़ाने वाले कारक",
     urgencyLevel: "गंभीरता/आपातकालीन स्तर",
     specialistType: "अनुशंसित विशेषज्ञ",
     confidence: "विश्वास स्तर",
     reasoningSummary: "कारण का सारांश",
-    notCaptured: "कैप्चर नहीं किया गया",
+    notCaptured: "उपलब्ध नहीं",
     clinicalReasoning: "चिकित्सीय तर्क का सारांश",
     extractedSlotMetadata: "लक्षणों का विवरण",
 
     // Urgency & Confidence Badges
-    emergency: "आपातकालीन (Emergency)",
-    urgent: "त्वरित चिकित्सा (Urgent)",
-    routine: "सामान्य परामर्श (Routine)",
-    self_care: "स्वयं की देखभाल (Self Care)",
-    high: "उच्च (High)",
-    moderate: "मध्यम (Moderate)",
-    low: "निम्न (Low)",
+    emergency: "आपातकालीन",
+    urgent: "त्वरित चिकित्सा",
+    routine: "सामान्य परामर्श",
+    self_care: "स्वयं की देखभाल",
+    high: "उच्च",
+    moderate: "मध्यम",
+    low: "निम्न",
 
     // Doctor Search Screen (DoctorSearch)
     gpsSuccess: "जीपीएस (GPS) स्थान सफलतापूर्वक सिंक हो गया है।",
@@ -179,16 +179,16 @@ export const specialistTranslations = {
     psychiatrist: "Psychiatrist"
   },
   hi: {
-    general_physician: "सामान्य चिकित्सक (General Physician)",
-    orthopedic: "हड्डी रोग विशेषज्ञ (Orthopedic)",
-    dermatologist: "त्वचा रोग विशेषज्ञ (Dermatologist)",
-    pulmonologist: "फेफड़े और श्वसन रोग विशेषज्ञ (Pulmonologist)",
-    cardiologist: "हृदय रोग विशेषज्ञ (Cardiologist)",
-    gastroenterologist: "पेट और पाचन रोग विशेषज्ञ (Gastroenterologist)",
-    ent: "कान, नाक, गला रोग विशेषज्ञ (ENT)",
-    gynecologist: "स्त्री रोग विशेषज्ञ (Gynecologist)",
-    pediatrician: "शिशु और बाल रोग विशेषज्ञ (Pediatrician)",
-    ophthalmologist: "आंखों के रोग विशेषज्ञ (Ophthalmologist)",
-    psychiatrist: "मानसिक स्वास्थ्य विशेषज्ञ (Psychiatrist)"
+    general_physician: "सामान्य चिकित्सक",
+    orthopedic: "हड्डी रोग विशेषज्ञ",
+    dermatologist: "त्वचा रोग विशेषज्ञ",
+    pulmonologist: "फेफड़े और श्वसन रोग विशेषज्ञ",
+    cardiologist: "हृदय रोग विशेषज्ञ",
+    gastroenterologist: "पेट और पाचन रोग विशेषज्ञ",
+    ent: "कान, नाक, गला विशेषज्ञ",
+    gynecologist: "स्त्री रोग विशेषज्ञ",
+    pediatrician: "बाल रोग विशेषज्ञ",
+    ophthalmologist: "नेत्र रोग विशेषज्ञ",
+    psychiatrist: "मनोचिकित्सक"
   }
 };

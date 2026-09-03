@@ -3,6 +3,53 @@ import { FaHeartbeat, FaInfoCircle, FaUserMd } from 'react-icons/fa';
 import { useStore } from '../store/useStore';
 import { translations, specialistTranslations } from '../utils/translations';
 
+const slotValueTranslations = {
+  // Onset values
+  "sudden": "अचानक",
+  "gradual": "धीरे-धीरे",
+  "unknown": "अज्ञात",
+  // Common body locations
+  "chest": "सीने (छाती)",
+  "back": "पीठ",
+  "knee": "घुटने",
+  "skin": "त्वचा",
+  "throat": "गला",
+  "head": "सिर",
+  "stomach": "पेट",
+  "abdomen": "पेट",
+  "ear": "कान",
+  "nose": "नाक",
+  "eye": "आँख",
+  // Common chief complaints/symptoms
+  "dry cough": "सूखी खांसी",
+  "cough": "खांसी",
+  "back pain": "पीठ का दर्द",
+  "knee pain": "घुटने का दर्द",
+  "chest pain": "सीने में दर्द",
+  "pain": "दर्द",
+  "fever": "बुखार",
+  "itching": "खुजली",
+  "rash": "त्वचा पर दाने",
+  "breathlessness": "सांस फूलना",
+  "headache": "सिरदर्द",
+  "vomiting": "उल्टी",
+  "diarrhea": "दस्त",
+  "acidity": "एसिडिटी",
+  "gas": "गैस",
+  // Durations
+  "1 week": "1 सप्ताह",
+  "2 weeks": "2 सप्ताह",
+  "3 weeks": "3 सप्ताह",
+  "1 day": "1 दिन",
+  "2 days": "2 दिन",
+  "3 days": "3 दिन",
+  "4 days": "4 दिन",
+  "5 days": "5 दिन",
+  "6 days": "6 दिन",
+  "1 month": "1 महीना",
+};
+
+
 export default function TriageCard() {
   const { triageResult, sessionState, language } = useStore();
 
@@ -92,13 +139,17 @@ export default function TriageCard() {
             if (key === 'red_flags_present' || key === 'relevant_history') return null;
             const isFilled = val !== null && val !== undefined && (!Array.isArray(val) || val.length > 0);
             
-            // Format duration values nice and short if they are localized Hindi arrays
+            // Format and dynamically translate values if Hindi is toggled
             let displayVal = 'Not Captured';
             if (isFilled) {
               if (Array.isArray(val)) {
-                displayVal = val.join(', ');
+                displayVal = val.map(item => {
+                  const keyLower = item.toString().toLowerCase().trim();
+                  return language === 'hi' ? (slotValueTranslations[keyLower] || item) : item;
+                }).join(', ');
               } else {
-                displayVal = val.toString();
+                const keyLower = val.toString().toLowerCase().trim();
+                displayVal = language === 'hi' ? (slotValueTranslations[keyLower] || val.toString()) : val.toString();
               }
             }
 

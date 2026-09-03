@@ -82,11 +82,11 @@ export default function DoctorSearch() {
               }}
               className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 shadow-sm focus:outline-none cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 transition-all"
             >
-              <option value="2">2 km</option>
-              <option value="5">5 km</option>
-              <option value="10">10 km</option>
-              <option value="20">20 km</option>
-              <option value="custom">Custom...</option>
+              <option value="2">2 {language === 'hi' ? 'किमी' : 'km'}</option>
+              <option value="5">5 {language === 'hi' ? 'किमी' : 'km'}</option>
+              <option value="10">10 {language === 'hi' ? 'किमी' : 'km'}</option>
+              <option value="20">20 {language === 'hi' ? 'किमी' : 'km'}</option>
+              <option value="custom">{language === 'hi' ? 'कस्टम...' : 'Custom...'}</option>
             </select>
           ) : (
             <div className="relative flex items-center">
@@ -94,7 +94,7 @@ export default function DoctorSearch() {
                 type="text"
                 value={radiusInput}
                 onChange={(e) => setRadiusInput(e.target.value)}
-                placeholder="e.g. 3.5km, 30km"
+                placeholder={language === 'hi' ? "जैसे: 3.5 किमी, 30 किमी" : "e.g. 3.5km, 30km"}
                 className="w-28 px-3 py-1.5 pr-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-750 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 shadow-sm focus:outline-none"
               />
               <button
@@ -144,7 +144,7 @@ export default function DoctorSearch() {
               
               <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 text-xs font-semibold">
                 <span className="text-gray-400 font-medium">
-                  {t.distanceLabel}: <span className="text-indigo-600 font-bold">{doc.distance_km?.toFixed(1)} km</span>
+                  {t.distanceLabel}: <span className="text-indigo-600 font-bold">{doc.distance_km?.toFixed(1)} {language === 'hi' ? 'किमी' : 'km'}</span>
                 </span>
 
                 <div className="flex gap-2">
