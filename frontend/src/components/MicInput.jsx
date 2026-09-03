@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { FaMicrophone, FaStop, FaPaperPlane, FaExclamationTriangle } from 'react-icons/fa'
 import { useStore } from '../store/useStore'
 
@@ -9,6 +9,15 @@ export default function MicInput() {
   const mediaRecorderRef = useRef(null)
   const streamRef = useRef(null)
   const audioChunksRef = useRef([])
+
+  useEffect(() => {
+    if (error === "Speech-to-text was unable to capture any words. Please try speaking again.") {
+      const timer = setTimeout(() => {
+        setError(null)
+      }, 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [error, setError])
 
   const startRecording = async () => {
     setError(null)
@@ -148,7 +157,20 @@ export default function MicInput() {
         </button>
       </form>
 
-      {error && (
+      {error && error === "Speech-to-text was unable to capture any words. Please try speaking again." && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl max-w-sm w-full border border-gray-100 dark:border-gray-700 text-center animate-scaleIn">
+            <div className="w-12 h-12 bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FaExclamationTriangle className="text-xl" />
+            </div>
+            <p className="text-gray-800 dark:text-gray-200 font-bold text-sm md:text-base leading-relaxed">
+              {error}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {error && error !== "Speech-to-text was unable to capture any words. Please try speaking again." && (
         <div className="mt-4 flex gap-2 p-3 bg-red-50 text-red-700 rounded-xl text-sm">
           <FaExclamationTriangle className="mt-0.5 flex-shrink-0" />
           <span>{error}</span>

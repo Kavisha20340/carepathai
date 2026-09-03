@@ -33,6 +33,8 @@ function AppContent() {
 
   const isResultsView = triageResult && location.pathname === '/triage';
 
+  const isLandingPath = location.pathname === '/';
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 flex flex-col font-sans transition-colors duration-200">
       <EmergencyOverlay />
@@ -90,7 +92,7 @@ function AppContent() {
         </div>
       </header>
 
-      <main className={`flex-grow flex flex-col items-center justify-center pt-4 pb-16 px-6 md:px-10 w-full mx-auto gap-6 transition-all duration-300 ${isResultsView ? 'max-w-5xl' : 'max-w-2xl'}`}>
+      <main className={`flex-grow flex flex-col items-center justify-center pt-4 ${isLandingPath ? 'pb-6' : 'pb-16'} px-6 md:px-10 w-full mx-auto gap-6 transition-all duration-300 ${isResultsView ? 'max-w-5xl' : 'max-w-2xl'}`}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/triage" element={
@@ -109,8 +111,12 @@ function AppContent() {
         </Routes>
       </main>
 
-      <footer className="py-3 border-t border-gray-150 dark:border-gray-850 bg-white/50 dark:bg-gray-950/20 text-center text-xs text-gray-400 font-medium">
-        <p>{t.footerText.replace('{year}', new Date().getFullYear())}</p>
+      <footer className="py-3 bg-white/50 dark:bg-gray-950/20 text-center text-xs text-gray-400 font-medium">
+        <div className={`mx-auto w-full px-6 md:px-10 transition-all duration-300 ${isResultsView ? 'max-w-5xl' : 'max-w-2xl'}`}>
+          <div className={`w-full mx-auto border-t border-gray-150 dark:border-gray-850 pt-3 ${isResultsView ? 'max-w-5xl' : 'max-w-xl'}`}>
+            <p>{t.footerText.replace('{year}', new Date().getFullYear())}</p>
+          </div>
+        </div>
       </footer>
     </div>
   );
