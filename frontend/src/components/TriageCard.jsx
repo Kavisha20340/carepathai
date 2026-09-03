@@ -1,59 +1,16 @@
 import React from 'react';
 import { FaHeartbeat, FaInfoCircle, FaUserMd } from 'react-icons/fa';
 import { useStore } from '../store/useStore';
-import { translations, specialistTranslations } from '../utils/translations';
+import { translations, specialistTranslations, slotValueTranslations } from '../utils/translations';
 
-const slotValueTranslations = {
-  // Onset values
-  "sudden": "अचानक",
-  "gradual": "धीरे-धीरे",
-  "unknown": "अज्ञात",
-  // Common body locations
-  "chest": "सीने (छाती)",
-  "back": "पीठ",
-  "knee": "घुटने",
-  "skin": "त्वचा",
-  "throat": "गला",
-  "head": "सिर",
-  "stomach": "पेट",
-  "abdomen": "पेट",
-  "ear": "कान",
-  "nose": "नाक",
-  "eye": "आँख",
-  // Common chief complaints/symptoms
-  "dry cough": "सूखी खांसी",
-  "cough": "खांसी",
-  "back pain": "पीठ का दर्द",
-  "knee pain": "घुटने का दर्द",
-  "chest pain": "सीने में दर्द",
-  "pain": "दर्द",
-  "fever": "बुखार",
-  "itching": "खुजली",
-  "rash": "त्वचा पर दाने",
-  "breathlessness": "सांस फूलना",
-  "headache": "सिरदर्द",
-  "vomiting": "उल्टी",
-  "diarrhea": "दस्त",
-  "acidity": "एसिडिटी",
-  "gas": "गैस",
-  "swelling": "सूजन",
-  "scratches": "खरोंचें",
-  "swelling and scratches": "सूजन और खरोंचें",
-  "inability to move": "हिलने-डुलने में असमर्थता",
-  // Durations
-  "several hours": "कई घंटे",
-  "1 week": "1 सप्ताह",
-  "2 weeks": "2 सप्ताह",
-  "3 weeks": "3 सप्ताह",
-  "1 day": "1 दिन",
-  "2 days": "2 दिन",
-  "3 days": "3 दिन",
-  "4 days": "4 दिन",
-  "5 days": "5 दिन",
-  "6 days": "6 दिन",
-  "1 month": "1 महीना",
+const getTranslatedSlotVal = (val, lang) => {
+  if (val === null || val === undefined) return '';
+  const strVal = val.toString();
+  if (lang !== 'hi') return strVal;
+  const keyLower = strVal.toLowerCase().trim();
+  const dict = typeof slotValueTranslations !== 'undefined' ? slotValueTranslations : {};
+  return dict[keyLower] || strVal;
 };
-
 
 export default function TriageCard() {
   const { triageResult, sessionState, language } = useStore();
@@ -62,8 +19,8 @@ export default function TriageCard() {
 
   const { urgency_level, specialist_type, confidence, reasoning_summary } = triageResult;
 
-  const t = translations[language || 'en'];
-  const sT = specialistTranslations[language || 'en'];
+  const t = translations[language || 'en'] || translations.en;
+  const sT = specialistTranslations[language || 'en'] || specialistTranslations.en;
 
   const urgencyColors = {
     self_care: 'bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-400 border-green-200 dark:border-green-900/50',
@@ -140,7 +97,7 @@ export default function TriageCard() {
       <div className="border-t border-gray-150 dark:border-gray-700 pt-4">
         <h3 className="text-sm font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-left mb-3">{t.extractedSlotMetadata}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {Object.entries(sessionState).map(([key, val]) => {
+          {sessionState && Object.entries(sessionState).map(([key, val]) => {
             if (key === 'red_flags_present' || key === 'relevant_history') return null;
             const isFilled = val !== null && val !== undefined && (!Array.isArray(val) || val.length > 0);
             
@@ -148,13 +105,9 @@ export default function TriageCard() {
             let displayVal = 'Not Captured';
             if (isFilled) {
               if (Array.isArray(val)) {
-                displayVal = val.map(item => {
-                  const keyLower = item.toString().toLowerCase().trim();
-                  return language === 'hi' ? (slotValueTranslations[keyLower] || item) : item;
-                }).join(', ');
+                displayVal = val.map(item => getTranslatedSlotVal(item, language)).join(', ');
               } else {
-                const keyLower = val.toString().toLowerCase().trim();
-                displayVal = language === 'hi' ? (slotValueTranslations[keyLower] || val.toString()) : val.toString();
+                displayVal = getTranslatedSlotVal(val, language);
               }
             }
 

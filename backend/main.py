@@ -6,6 +6,7 @@ from google.cloud import speech
 
 from backend.models import TriageRequest, FollowUpResponse, TriageCompleteResponse, EmergencyResponse, DoctorSearchRequest, DoctorSearchResponse, SessionState
 from backend.triage_logic import check_red_flags, apply_specialist_backstop, call_gemini_triage
+from backend.translation_logic import translate_text
 from backend.places_logic import search_nearby_doctors
 from backend.auth_logic import verify_id_token
 from backend.firestore_logic import get_session, update_session
@@ -49,6 +50,15 @@ async def triage(request: TriageRequest, uid: str = Depends(verify_id_token)):
             session_state = SessionState()
             logger.info(f"No previous state found. Initializing blank session state for ID {request.session_id}")
 
+        # If a non-English language is specified, translate the transcript to English first
+        if request.language != "en":
+            original_transcript = request.transcript
+            logger.info(f"Translating transcript from {request.language} to English...")
+            request.transcript = translate_text(request.transcript, target_language="en")
+            logger.info(f"Translated transcript: '{request.transcript}'")
+        else:
+            original_transcript = request.transcript
+
         # 2. Deterministic Red Flag check (raw transcript + current severity in loaded session_state)
         emergency_message = check_red_flags(request.transcript, session_state.severity)
         if emergency_message:
@@ -82,7 +92,6 @@ async def triage(request: TriageRequest, uid: str = Depends(verify_id_token)):
         updated_state_dict = gemini_data.get("updated_session_state", {})
         
         # Post-Gemini Extraction Clinical Safety Guard:
-        gemini_response = call_gemini_triage(request.transcript, session_state, request.turn_count, request.max_turns, language=request.language)
         # If Gemini extracted a high severity (>= 9) or any symptom triggers a red flag, short-circuit immediately.
         extracted_severity = updated_state_dict.get("severity")
         emergency_message = check_red_flags(request.transcript, extracted_severity)
@@ -125,6 +134,11 @@ async def triage(request: TriageRequest, uid: str = Depends(verify_id_token)):
             
             logger.info(f"Triage complete. Final specialist: {final_specialist}, Urgency: {triage_result_dict.get('urgency_level')}")
             
+            # If a non-English language was used, translate the reasoning summary back
+            if request.language != "en":
+                if "reasoning_summary" in triage_result_dict:
+                    triage_result_dict["reasoning_summary"] = translate_text(triage_result_dict["reasoning_summary"], request.language)
+
             # Persist complete state to Firestore
             update_session(
                 session_id=request.session_id,
@@ -133,7 +147,7 @@ async def triage(request: TriageRequest, uid: str = Depends(verify_id_token)):
                 turn_count=request.turn_count,
                 triage_result=triage_result_dict
             )
-            
+
             return TriageCompleteResponse(
                 status="triage_complete",
                 updated_session_state=updated_state_dict,
@@ -142,7 +156,9 @@ async def triage(request: TriageRequest, uid: str = Depends(verify_id_token)):
             
         else:
             # Continue the follow-up flow
-            follow_up_question = gemini_data.get("follow_up_question", "Could you provide more details about how you are feeling?")
+            follow_up_question = gemini_data.get("follow_up_question") or gemini_data.get("response", {}).get("follow_up_question", "Could you provide more details about how you are feeling?")
+            if request.language != "en":
+                follow_up_question = translate_text(follow_up_question, request.language)
             
             logger.info(f"Triage follow-up generated: '{follow_up_question}'")
             
@@ -217,6 +233,9 @@ async def transcribe(file: UploadFile = File(...), language: str = "en"):
         
         logger.info("Calling Google Cloud Speech-to-Text API...")
         response = client.recognize(config=config, audio=audio)
+
+
+
         
         # Extract transcribed text
         transcript_parts = []
@@ -232,6 +251,38 @@ async def transcribe(file: UploadFile = File(...), language: str = "en"):
     except Exception as e:
         logger.error(f"Error during transcription: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
+@app.post("/translate-results", response_model=TriageCompleteResponse)
+async def translate_results(session_id: str, language: str, uid: str = Depends(verify_id_token)):
+    logger.info(f"Received request to translate results for session {session_id} to {language}")
+    try:
+        session_doc = get_session(session_id)
+        if not session_doc:
+            raise HTTPException(status_code=404, detail="Session not found.")
+
+        triage_result = session_doc.get("triage_result", {})
+        session_state = session_doc.get("slot_fields", {})
+
+        if language != "en":
+            for key, value in session_state.items():
+                if isinstance(value, str):
+                    session_state[key] = translate_text(value, language)
+                elif isinstance(value, list):
+                    session_state[key] = [translate_text(item, language) for item in value]
+
+            if "reasoning_summary" in triage_result:
+                triage_result["reasoning_summary"] = translate_text(triage_result["reasoning_summary"], language)
+
+        return TriageCompleteResponse(
+            status="triage_complete",
+            updated_session_state=session_state,
+            triage_result=triage_result
+        )
+
+    except Exception as e:
+        logger.error(f"Error translating results: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/doctors", response_model=DoctorSearchResponse)
 async def get_doctors(request: DoctorSearchRequest, uid: str = Depends(verify_id_token)):

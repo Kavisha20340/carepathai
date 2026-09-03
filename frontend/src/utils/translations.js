@@ -160,7 +160,7 @@ export const translations = {
     btnRestart: "ऐप रीसेट करें और पुनः प्रारंभ करें",
 
     // Footer
-    footerText: "© {year} केयरपाथ एआई। हैकथॉन उत्कृष्टता के लिए निर्मित। गूगल क्लाउड वर्टेक्स एआई और फायरस्टोर पर सुरक्षित रूप से प्रबंधित।",
+    footerText: "© {year} केयरपाथएआई। गूगल पचामोमा 2026 के लिए निर्मित।",
   }
 };
 
@@ -192,3 +192,62 @@ export const specialistTranslations = {
     psychiatrist: "मनोचिकित्सक"
   }
 };
+
+export const slotValueTranslations = {
+  // Onset values
+  "sudden": "अचानक",
+  "gradual": "धीरे-धीरे",
+  "unknown": "अज्ञात",
+  // Common body locations
+  "chest": "सीने (छाती)",
+  "back": "पीठ",
+  "knee": "घुटने",
+  "knees": "घुटने",
+  "skin": "त्वचा",
+  "throat": "गला",
+  "head": "सिर",
+  "stomach": "पेट",
+  "abdomen": "पेट",
+  "ear": "कान",
+  "nose": "नाक",
+  "eye": "आँख",
+  "feet": "पैर",
+  "foot": "पैर",
+  "leg": "टांग / पैर",
+  "legs": "टांगें / पैर",
+  "ankle": "टखना",
+  "knees and ankles": "घुटने और टखने",
+  // Common chief complaints/symptoms
+  "dry cough": "सूखी खांसी",
+  "cough": "खांसी",
+  "back pain": "पीठ का दर्द",
+  "knee pain": "घुटने का दर्द",
+  "chest pain": "सीने में दर्द",
+  "pain": "दर्द",
+  "fever": "बुखार",
+  "itching": "खुजली",
+  "rash": "त्वचा पर दाने",
+  "breathlessness": "सांस फूलना",
+  "headache": "सिरदर्द",
+  "vomiting": "उल्टी",
+  "diarrhea": "दस्त",
+  "acidity": "एसिडिटी",
+  "gas": "गैस",
+  "swelling": "सूजन",
+  "scratches": "खरोंचें",
+  "swelling and scratches": "सूजन और खरोंचें",
+  "inability to move": "हिलने-डुलने में असमर्थता",
+  // Durations
+  "several hours": "कई घंटे",
+  "1 week": "1 सप्ताह",
+  "2 weeks": "2 सप्ताह",
+  "3 weeks": "3 सप्ताह",
+  "1 day": "1 दिन",
+  "2 days": "2 दिन",
+  "3 days": "3 दिन",
+  "4 days": "4 दिन",
+  "5 days": "5 दिन",
+  "6 days": "6 दिन",
+  "1 month": "1 महीना",
+};
+

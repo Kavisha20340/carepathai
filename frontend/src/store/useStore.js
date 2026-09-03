@@ -95,22 +95,42 @@ export const useStore = create((set, get) => ({
   },
 
   // Actions
-  setLanguage: (lang) => {
-    localStorage.setItem('carepath_lang', lang)
-    const greeting = lang === 'hi'
-      ? "CarePathAI में आपका स्वागत है! संक्षेप में अपने लक्षणों का वर्णन करें और हम आपको उच्च-रेटेड स्थानीय विशेषज्ञों के पास निर्देशित करेंगे।"
-      : "Welcome to CarePathAI! Briefly describe your symptoms and we will guide you to highly-rated local specialists."
-    
-    set({
-      language: lang,
-      conversationHistory: [
-        {
-          role: 'assistant',
-          text: greeting,
-          timestamp: Date.now()
-        }
-      ]
-    })
+  setLanguage: async (lang) => {
+    localStorage.setItem('carepath_lang', lang);
+    const { sessionId, triageResult } = get();
+
+    if (triageResult) {
+      set({ isLoading: true });
+      try {
+        const response = await axios.post(`${API_BASE_URL}/translate-results?session_id=${sessionId}&language=${lang}`, {}, {
+          headers: getHeaders()
+        });
+        set({
+          language: lang,
+          triageResult: response.data.triage_result,
+          sessionState: response.data.updated_session_state,
+          isLoading: false
+        });
+      } catch (error) {
+        console.error("Translation error:", error);
+        set({ isLoading: false, error: "Failed to translate results." });
+      }
+    } else {
+      const greeting = lang === 'hi'
+        ? "CarePathAI में आपका स्वागत है! संक्षेप में अपने लक्षणों का वर्णन करें और हम आपको उच्च-रेटेड स्थानीय विशेषज्ञों के पास निर्देशित करेंगे।"
+        : "Welcome to CarePathAI! Briefly describe your symptoms and we will guide you to highly-rated local specialists.";
+      
+      set({
+        language: lang,
+        conversationHistory: [
+          {
+            role: 'assistant',
+            text: greeting,
+            timestamp: Date.now()
+          }
+        ]
+      });
+    }
   },
 
   setIsRecording: (isRecording) => set({ isRecording }),

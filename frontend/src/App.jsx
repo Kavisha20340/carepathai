@@ -8,6 +8,7 @@ import ConversationDisplay from './components/ConversationDisplay';
 import TriageCard from './components/TriageCard';
 import DoctorSearch from './components/DoctorSearch';
 import EmergencyOverlay from './components/EmergencyOverlay';
+import ErrorBoundary from './components/ErrorBoundary';
 import { translations } from './utils/translations';
 
 function AppContent() {
@@ -120,8 +121,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <AppContent />
+      </Router>
+    </ErrorBoundary>
   );
 }
