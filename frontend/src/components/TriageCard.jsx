@@ -36,7 +36,12 @@ const slotValueTranslations = {
   "diarrhea": "दस्त",
   "acidity": "एसिडिटी",
   "gas": "गैस",
+  "swelling": "सूजन",
+  "scratches": "खरोंचें",
+  "swelling and scratches": "सूजन और खरोंचें",
+  "inability to move": "हिलने-डुलने में असमर्थता",
   // Durations
+  "several hours": "कई घंटे",
   "1 week": "1 सप्ताह",
   "2 weeks": "2 सप्ताह",
   "3 weeks": "3 सप्ताह",

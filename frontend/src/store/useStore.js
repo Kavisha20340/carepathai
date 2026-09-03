@@ -124,7 +124,7 @@ export const useStore = create((set, get) => ({
       const formData = new FormData()
       formData.append('file', audioBlob, 'audio.webm')
 
-      const response = await axios.post(`${API_BASE_URL}/transcribe?language=${get().language || 'en'}`, formData, {
+      const response = await axios.post(`${API_BASE_URL}/transcribe?language=${get().language}`, formData, {
         headers: {
           ...getHeaders(),
           'Content-Type': 'multipart/form-data',
@@ -167,7 +167,7 @@ export const useStore = create((set, get) => ({
         session_id: sessionId,
         turn_count: nextTurn,
         max_turns: maxTurns,
-        language: language || 'en'
+        language: language
       }, {
         headers: getHeaders()
       })

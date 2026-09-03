@@ -82,6 +82,7 @@ async def triage(request: TriageRequest, uid: str = Depends(verify_id_token)):
         updated_state_dict = gemini_data.get("updated_session_state", {})
         
         # Post-Gemini Extraction Clinical Safety Guard:
+        gemini_response = call_gemini_triage(request.transcript, session_state, request.turn_count, request.max_turns, language=request.language)
         # If Gemini extracted a high severity (>= 9) or any symptom triggers a red flag, short-circuit immediately.
         extracted_severity = updated_state_dict.get("severity")
         emergency_message = check_red_flags(request.transcript, extracted_severity)
@@ -203,13 +204,13 @@ async def transcribe(file: UploadFile = File(...), language: str = "en"):
         
         # Configure primary and alternative languages based on pre-selection
         primary_lang = "hi-IN" if language == "hi" else "en-IN"
-        alt_lang = "en-IN" if language == "hi" else "hi-IN"
+        
         
         # We use ENCODING_UNSPECIFIED so Google Speech-to-Text auto-detects WAV, WebM, Ogg, MP3, etc.
         config = speech.RecognitionConfig(
             encoding=speech.RecognitionConfig.AudioEncoding.ENCODING_UNSPECIFIED,
             language_code=primary_lang,
-            alternative_language_codes=[alt_lang],
+            
             enable_automatic_punctuation=True,
             speech_contexts=speech_contexts,  # Add Speech Contexts!
         )
