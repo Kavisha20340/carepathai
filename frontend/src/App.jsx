@@ -39,13 +39,15 @@ function AppContent() {
       <EmergencyOverlay />
 
       <header className="sticky top-0 z-30 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md py-2 border-b border-gray-100 dark:border-gray-800/40">
-        <div className={`mx-auto w-full px-6 md:px-10 flex items-center justify-between transition-all duration-300 ${isResultsView ? 'max-w-5xl' : 'max-w-2xl'}`}>
-          <div className={`w-full mx-auto flex items-center justify-between ${isResultsView ? 'max-w-5xl' : 'max-w-xl'}`}>
+        <div className="mx-auto w-full max-w-2xl px-6 md:px-10 flex items-center justify-between transition-all duration-300">
+          <div className="w-full mx-auto max-w-xl flex items-center justify-between">
             <div className="text-left flex flex-col justify-center">
               <h1 className="text-xs md:text-sm font-bold tracking-tight text-gray-950 dark:text-white m-0 leading-none">
                 {t.logo}
               </h1>
-              <p className="text-[10px] md:text-xs font-semibold text-indigo-600 dark:text-indigo-400 m-0 mt-0.5 leading-none">
+              <p className={`font-semibold text-indigo-600 dark:text-indigo-400 m-0 mt-0.5 leading-none ${
+                t === translations.en ? 'text-[12px] md:text-[14px]' : 'text-[10px] md:text-xs'
+              }`}>
                 {t.subtitle}
               </p>
             </div>
@@ -111,8 +113,8 @@ function AppContent() {
       </main>
 
       <footer className="py-3 bg-white/50 dark:bg-gray-950/20 text-center text-xs text-gray-400 font-medium">
-        <div className={`mx-auto w-full px-6 md:px-10 transition-all duration-300 ${isResultsView ? 'max-w-5xl' : 'max-w-2xl'}`}>
-          <div className={`w-full mx-auto border-t border-gray-150 dark:border-gray-850 pt-3 ${isResultsView ? 'max-w-5xl' : 'max-w-xl'}`}>
+        <div className="mx-auto w-full max-w-2xl px-6 md:px-10 transition-all duration-300">
+          <div className="w-full mx-auto border-t border-gray-150 dark:border-gray-850 pt-3 max-w-xl">
             <p>{t.footerText.replace('{year}', new Date().getFullYear())}</p>
           </div>
         </div>
