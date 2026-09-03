@@ -45,7 +45,7 @@ export const translations = {
     reasoningSummary: "Reasoning Summary",
     notCaptured: "Not Captured",
     clinicalReasoning: "Clinical Reasoning Summary",
-    extractedSlotMetadata: "Extracted Slot Metadata",
+    extractedSlotMetadata: "Symptom Summary",
 
     // Urgency & Confidence Badges
     emergency: "Emergency",
@@ -59,11 +59,11 @@ export const translations = {
     // Doctor Search Screen (DoctorSearch)
     gpsSuccess: "GPS coordinates synced successfully.",
     gpsAcquiring: "Acquiring GPS coordinates...",
-    stepSearchNearby: "Step 2: Find Nearby Specialists",
+    stepSearchNearby: "Find Nearby Specialists",
     radiusLabel: "RADIUS:",
     btnSearchDoctors: "Find {specialist}s Near Me",
     searchingGooglePlaces: "Searching Google Places...",
-    recommendedDoctorsHeader: "Recommended Doctors Mapped",
+    recommendedDoctorsHeader: "Recommended Doctors",
     resultsPlaceholder: "Specialist search results will appear here.",
     ratingLabel: "Rating",
     distanceLabel: "Distance",
@@ -127,7 +127,7 @@ export const translations = {
     reasoningSummary: "कारण का सारांश",
     notCaptured: "कैप्चर नहीं किया गया",
     clinicalReasoning: "चिकित्सीय तर्क का सारांश",
-    extractedSlotMetadata: "एकत्रित लक्षण डेटा",
+    extractedSlotMetadata: "लक्षणों का विवरण",
 
     // Urgency & Confidence Badges
     emergency: "आपातकालीन (Emergency)",
@@ -141,7 +141,7 @@ export const translations = {
     // Doctor Search Screen (DoctorSearch)
     gpsSuccess: "जीपीएस (GPS) स्थान सफलतापूर्वक सिंक हो गया है।",
     gpsAcquiring: "जीपीएस (GPS) निर्देशांक प्राप्त किए जा रहे हैं...",
-    stepSearchNearby: "चरण 2: आस-पास के विशेषज्ञों को खोजें",
+    stepSearchNearby: "आस-पास के विशेषज्ञों को खोजें",
     radiusLabel: "खोज दायरा:",
     btnSearchDoctors: "मेरे पास {specialist} खोजें",
     searchingGooglePlaces: "गूगल मैप्स पर डॉक्टर खोजे जा रहे हैं...",

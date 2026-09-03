@@ -47,11 +47,10 @@ export default function TriageCard() {
     <div className="w-full max-w-2xl mx-auto flex flex-col gap-6 p-6 bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 animate-fadeIn">
       
       {/* Triage Summary Header */}
-      <div className="flex items-center gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
+      <div className="flex items-center gap-3 pb-4 border-b border-gray-150 dark:border-gray-700">
         <FaHeartbeat className="text-3xl text-indigo-600 animate-pulse" />
         <div className="text-left">
           <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t.cardTitle}</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Deterministic slot-filling diagnosis fallback applied</p>
         </div>
       </div>
 
@@ -86,9 +85,9 @@ export default function TriageCard() {
       </div>
 
       {/* Extracted Slots (Transparency Layer) */}
-      <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+      <div className="border-t border-gray-150 dark:border-gray-700 pt-4">
         <h3 className="text-sm font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider text-left mb-3">{t.extractedSlotMetadata}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {Object.entries(sessionState).map(([key, val]) => {
             if (key === 'red_flags_present' || key === 'relevant_history') return null;
             const isFilled = val !== null && val !== undefined && (!Array.isArray(val) || val.length > 0);
@@ -104,9 +103,9 @@ export default function TriageCard() {
             }
 
             return (
-              <div key={key} className="flex justify-between items-center p-2.5 bg-gray-50/50 dark:bg-gray-900/50 rounded-xl border border-gray-100/40 dark:border-gray-800/40 text-xs">
-                <span className="font-semibold text-gray-500 dark:text-gray-400">{slotLabels[key] || key}</span>
-                <span className={`font-bold capitalize truncate max-w-[160px] ${isFilled ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-300 dark:text-gray-600'}`}>
+              <div key={key} className="flex flex-col gap-1 p-3 bg-gray-50/50 dark:bg-gray-900/50 rounded-xl border border-gray-100/40 dark:border-gray-800/40 text-xs text-left">
+                <span className="font-semibold text-gray-400 dark:text-gray-500">{slotLabels[key] || key}</span>
+                <span className={`font-bold capitalize leading-normal ${isFilled ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-300 dark:text-gray-650'}`}>
                   {isFilled ? displayVal : t.notCaptured}
                 </span>
               </div>

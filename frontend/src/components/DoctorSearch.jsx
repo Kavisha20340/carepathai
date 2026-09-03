@@ -5,7 +5,8 @@ import { translations, specialistTranslations } from '../utils/translations';
 
 export default function DoctorSearch() {
   const { triageResult, doctors, searchDoctors, isLoading, setError, language } = useStore();
-  const [radius, setRadius] = useState(10.0);
+  const [radiusInput, setRadiusInput] = useState("10");
+  const [isCustomRadius, setIsCustomRadius] = useState(false);
   const [coords, setCoords] = useState(null);
   const [locState, setLocState] = useState('idle');
 
@@ -32,7 +33,13 @@ export default function DoctorSearch() {
 
   const handleSearch = async () => {
     if (!coords || !triageResult) return;
-    await searchDoctors(triageResult.specialist_type, coords.lat, coords.lng, parseFloat(radius));
+    
+    // Extract numerical value and decimal points, e.g. "30km" -> "30", "3.5km" -> "3.5"
+    const cleanRadius = radiusInput.replace(/[^0-9.]/g, '');
+    const parsedRadius = parseFloat(cleanRadius);
+    const finalRadius = isNaN(parsedRadius) || parsedRadius <= 0 ? 10.0 : parsedRadius;
+    
+    await searchDoctors(triageResult.specialist_type, coords.lat, coords.lng, finalRadius);
   };
 
   if (!triageResult) return null;
@@ -41,30 +48,68 @@ export default function DoctorSearch() {
   const translatedSpecialist = sT[specialist_type] || specialist_type;
 
   return (
-    <div className="w-full max-w-2xl mx-auto mt-8 flex flex-col gap-6 p-6 bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-150 dark:border-gray-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-gray-150 dark:border-gray-700 text-left">
-        <div>
-          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-            <FaMapMarkerAlt className="text-indigo-600" />
-            <span>{t.stepSearchNearby}</span>
-          </h2>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {locState === 'success' ? t.gpsSuccess : t.gpsAcquiring}
-          </p>
+    <div className="w-full max-w-2xl mx-auto flex flex-col gap-6 p-6 bg-white dark:bg-gray-800 rounded-3xl shadow-xl">
+      {/* Search Specialists Header */}
+      <div className="flex items-center gap-3 pb-4 border-b border-gray-150 dark:border-gray-700">
+        <FaMapMarkerAlt className="text-3xl text-indigo-600 animate-pulse flex-shrink-0" />
+        <div className="text-left">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t.stepSearchNearby}</h2>
+        </div>
+      </div>
+
+      {/* Radius Controls Bar */}
+      <div className="flex items-center justify-between p-3.5 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl border border-gray-100/40 dark:border-gray-800/40 text-xs">
+        <div className="flex flex-col gap-0.5 text-left">
+          <span className="font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.radiusLabel}</span>
+          {locState === 'fetching' && (
+            <p className="text-[10px] text-indigo-500 animate-pulse font-medium">
+              {t.gpsAcquiring}
+            </p>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-semibold text-gray-400">{t.radiusLabel}</label>
-          <select
-            value={radius}
-            onChange={(e) => setRadius(parseFloat(e.target.value))}
-            className="px-2 py-1 bg-gray-50 dark:bg-gray-900 border border-gray-200 rounded text-sm font-bold text-gray-700 dark:text-gray-300 focus:outline-none"
-          >
-            <option value="2.0">2 km</option>
-            <option value="5.0">5 km</option>
-            <option value="10.0">10 km</option>
-            <option value="20.0">20 km</option>
-          </select>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {!isCustomRadius ? (
+            <select
+              value={radiusInput}
+              onChange={(e) => {
+                if (e.target.value === "custom") {
+                  setIsCustomRadius(true);
+                  setRadiusInput("");
+                } else {
+                  setRadiusInput(e.target.value);
+                }
+              }}
+              className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 shadow-sm focus:outline-none cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 transition-all"
+            >
+              <option value="2">2 km</option>
+              <option value="5">5 km</option>
+              <option value="10">10 km</option>
+              <option value="20">20 km</option>
+              <option value="custom">Custom...</option>
+            </select>
+          ) : (
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                value={radiusInput}
+                onChange={(e) => setRadiusInput(e.target.value)}
+                placeholder="e.g. 3.5km, 30km"
+                className="w-28 px-3 py-1.5 pr-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-750 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 shadow-sm focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCustomRadius(false);
+                  setRadiusInput("10");
+                }}
+                className="absolute right-2 px-1.5 py-0.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 font-bold cursor-pointer"
+                title="Back to options"
+              >
+                ✕
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

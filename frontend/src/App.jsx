@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { FaHeartbeat, FaSync, FaShieldAlt, FaComments, FaCheckCircle } from 'react-icons/fa';
+import { FaHeartbeat, FaSync, FaShieldAlt, FaComments } from 'react-icons/fa';
 import { useStore } from './store/useStore';
 import LandingPage from './components/LandingPage';
 import MicInput from './components/MicInput';
@@ -30,12 +30,14 @@ function AppContent() {
 
   const isTriagePath = location.pathname === '/triage';
 
+  const isResultsView = triageResult && location.pathname === '/triage';
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 flex flex-col font-sans transition-colors duration-200">
       <EmergencyOverlay />
 
       <header className="sticky top-0 z-30 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md py-2 border-b border-gray-100 dark:border-gray-800/40">
-        <div className="max-w-2xl mx-auto w-full px-4 flex items-center justify-between">
+        <div className={`mx-auto w-full px-4 flex items-center justify-between transition-all duration-300 ${isResultsView ? 'max-w-5xl' : 'max-w-2xl'}`}>
           <div className="flex items-center gap-2">
             <div className="p-1 bg-indigo-600 rounded-md text-white">
               <FaHeartbeat className="text-[10px] animate-pulse" />
@@ -90,7 +92,7 @@ function AppContent() {
         </div>
       </header>
 
-      <main className="flex-grow flex flex-col items-center justify-center py-2 px-4 max-w-2xl w-full mx-auto gap-4">
+      <main className={`flex-grow flex flex-col items-center justify-center pt-4 pb-16 px-6 md:px-10 w-full mx-auto gap-6 transition-all duration-300 ${isResultsView ? 'max-w-5xl' : 'max-w-2xl'}`}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/triage" element={
@@ -100,20 +102,7 @@ function AppContent() {
                 <MicInput />
               </div>
             ) : (
-              <div className="w-full flex flex-col gap-2 animate-slideIn">
-                <div className="text-center max-w-xl mx-auto mb-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 border border-green-100 dark:border-green-900/40 rounded-full text-xs font-bold mb-3">
-                    <FaCheckCircle />
-                    <span>{t.triageSuccess}</span>
-                  </span>
-                  <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-                    {t.carepathGuidance}
-                  </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    {t.carepathSubtitle}
-                  </p>
-                </div>
-
+              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-6 animate-slideIn items-start">
                 <TriageCard />
                 <DoctorSearch />
               </div>
