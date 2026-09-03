@@ -17,6 +17,7 @@ class TriageRequest(BaseModel):
     session_id: str
     turn_count: int
     max_turns: int = 3
+    language: Optional[str] = "en"
 
 
 class TriageResult(BaseModel):

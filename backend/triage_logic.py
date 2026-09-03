@@ -221,7 +221,7 @@ If enough information has been gathered OR turn_count >= max_turns (status = "tr
 
 
 
-def call_gemini_triage(transcript: str, session_state: SessionState, turn_count: int, max_turns: int = 3) -> Dict[str, Any]:
+def call_gemini_triage(transcript: str, session_state: SessionState, turn_count: int, max_turns: int = 3, language: str = "en") -> Dict[str, Any]:
     """
     Executes the Gemini model call using Vertex AI's gemini-2.5-flash.
     Includes a retry block on parse failure as specified.
@@ -233,8 +233,14 @@ def call_gemini_triage(transcript: str, session_state: SessionState, turn_count:
         "max_turns": max_turns
     }
     
+    # Language override instruction
+    if language == "hi":
+        language_override = "\n\nCRITICAL LANGUAGE OVERRIDE: The pre-selected language for this session is HINDI. You MUST respond ONLY in Hindi Devanagari script for both the 'follow_up_question' and the 'reasoning_summary' fields. Do not use English or Romanized Hinglish under any circumstances in these response fields."
+    else:
+        language_override = "\n\nCRITICAL LANGUAGE OVERRIDE: The pre-selected language for this session is ENGLISH. You MUST respond ONLY in English for both the 'follow_up_question' and the 'reasoning_summary' fields."
+
     # Format user prompt
-    prompt = f"System Prompt:\n{SYSTEM_PROMPT}\n\nInput Context:\n{json.dumps(input_payload, indent=2)}\n\nGenerate the JSON response:"
+    prompt = f"System Prompt:\n{SYSTEM_PROMPT}{language_override}\n\nInput Context:\n{json.dumps(input_payload, indent=2)}\n\nGenerate the JSON response:"
     
     # We call Gemini with response_mime_type set to json to guarantee clean JSON output
     generation_config = GenerationConfig(
@@ -245,7 +251,7 @@ def call_gemini_triage(transcript: str, session_state: SessionState, turn_count:
     # Attempt 1
     try:
         model = GenerativeModel("gemini-2.5-flash")
-        logger.info(f"Sending request to Gemini (Turn {turn_count})...")
+        logger.info(f"Sending request to Gemini (Turn {turn_count}, language: {language})...")
         response = model.generate_content(prompt, generation_config=generation_config)
         response_text = response.text.strip()
         logger.info(f"Raw response from Gemini: {response_text}")
@@ -274,15 +280,25 @@ def call_gemini_triage(transcript: str, session_state: SessionState, turn_count:
                 updated_state = session_state.dict()
                 if not updated_state.get("chief_complaint"):
                     updated_state["chief_complaint"] = transcript
+                
+                fallback_question = "Could you describe your symptoms in more detail?"
+                if language == "hi":
+                    fallback_question = "क्या आप अपने लक्षणों के बारे में अधिक विस्तार से बता सकते हैं?"
+
                 return {
                     "status": "follow_up",
                     "updated_session_state": updated_state,
-                    "follow_up_question": "Could you describe your symptoms in more detail?"
+                    "follow_up_question": fallback_question
                 }
             else:
                 updated_state = session_state.dict()
                 if not updated_state.get("chief_complaint"):
                     updated_state["chief_complaint"] = transcript
+                
+                reasoning = "Triage was completed with limited details due to connectivity or communication constraints."
+                if language == "hi":
+                    reasoning = "कनेक्टिविटी या संचार सीमाओं के कारण सीमित विवरण के साथ ट्राइएज पूरा किया गया था।"
+
                 return {
                     "status": "triage_complete",
                     "updated_session_state": updated_state,
@@ -291,7 +307,7 @@ def call_gemini_triage(transcript: str, session_state: SessionState, turn_count:
                         "specialist_type": "general_physician",
                         "confidence": "low",
                         "red_flags_triggered": [],
-                        "reasoning_summary": "Triage was completed with limited details due to connectivity or communication constraints."
+                        "reasoning_summary": reasoning
                     }
                 }
 

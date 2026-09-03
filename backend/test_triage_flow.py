@@ -233,7 +233,8 @@ def test_happy_path_skin_rash_hindi():
         "transcript": "मुझे पिछले तीन दिनों से हाथ में बहुत खुजली हो रही है और लाल दाने आ गए हैं",
         "session_id": "hindi_rash_session",
         "turn_count": 0,
-        "max_turns": 3
+        "max_turns": 3,
+        "language": "hi"
     }
     
     response = client.post("/triage", json=payload)

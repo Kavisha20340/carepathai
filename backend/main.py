@@ -75,7 +75,7 @@ async def triage(request: TriageRequest, uid: str = Depends(verify_id_token)):
             )
             
         # 3. Process conversation with Gemini Flash via Vertex AI
-        gemini_data = call_gemini_triage(request.transcript, session_state, request.turn_count, request.max_turns)
+        gemini_data = call_gemini_triage(request.transcript, session_state, request.turn_count, request.max_turns, request.language)
         
         # 4. Handle completion vs follow-up
         status = gemini_data.get("status", "follow_up")
@@ -171,13 +171,13 @@ async def health_check():
 
 
 @app.post("/transcribe")
-async def transcribe(file: UploadFile = File(...)):
+async def transcribe(file: UploadFile = File(...), language: str = "en"):
     """
     POST /transcribe
     Upload an audio file (WebM, WAV, OGG, MP3, etc.) recorded via browser mic.
-    Returns the transcribed text with English (en-IN) and Hindi (hi-IN) auto-detection.
+    Returns the transcribed text with pre-selected primary and fallback languages.
     """
-    logger.info(f"Received audio file for transcription: '{file.filename}', content_type: '{file.content_type}'")
+    logger.info(f"Received audio file for transcription: '{file.filename}', content_type: '{file.content_type}', selected language: '{language}'")
     
     try:
         content = await file.read()
@@ -201,11 +201,15 @@ async def transcribe(file: UploadFile = File(...)):
             )
         ]
         
+        # Configure primary and alternative languages based on pre-selection
+        primary_lang = "hi-IN" if language == "hi" else "en-IN"
+        alt_lang = "en-IN" if language == "hi" else "hi-IN"
+        
         # We use ENCODING_UNSPECIFIED so Google Speech-to-Text auto-detects WAV, WebM, Ogg, MP3, etc.
         config = speech.RecognitionConfig(
             encoding=speech.RecognitionConfig.AudioEncoding.ENCODING_UNSPECIFIED,
-            language_code="en-IN",
-            alternative_language_codes=["hi-IN"],
+            language_code=primary_lang,
+            alternative_language_codes=[alt_lang],
             enable_automatic_punctuation=True,
             speech_contexts=speech_contexts,  # Add Speech Contexts!
         )
