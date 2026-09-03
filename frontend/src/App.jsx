@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { FaHeartbeat, FaSync, FaShieldAlt, FaComments } from 'react-icons/fa';
+import { FaSync } from 'react-icons/fa';
 import { useStore } from './store/useStore';
 import LandingPage from './components/LandingPage';
 import MicInput from './components/MicInput';
@@ -38,11 +38,8 @@ function AppContent() {
       <EmergencyOverlay />
 
       <header className="sticky top-0 z-30 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md py-2 border-b border-gray-100 dark:border-gray-800/40">
-        <div className={`mx-auto w-full px-4 flex items-center justify-between transition-all duration-300 ${isResultsView ? 'max-w-5xl' : 'max-w-2xl'}`}>
-          <div className="flex items-center gap-2">
-            <div className="p-1 bg-indigo-600 rounded-md text-white">
-              <FaHeartbeat className="text-[10px] animate-pulse" />
-            </div>
+        <div className={`mx-auto w-full px-6 md:px-10 flex items-center justify-between transition-all duration-300 ${isResultsView ? 'max-w-5xl' : 'max-w-2xl'}`}>
+          <div className={`w-full mx-auto flex items-center justify-between ${isResultsView ? 'max-w-5xl' : 'max-w-xl'}`}>
             <div className="text-left flex flex-col justify-center">
               <h1 className="text-xs md:text-sm font-bold tracking-tight text-gray-950 dark:text-white m-0 leading-none">
                 {t.logo}
@@ -51,44 +48,44 @@ function AppContent() {
                 {t.subtitle}
               </p>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3">
-            {isTriagePath && language && (
-              <div className="flex items-center bg-gray-100 dark:bg-gray-855 rounded-xl p-1 border border-gray-200 dark:border-gray-800 shadow-inner">
-                <button
-                  onClick={() => setLanguage('en')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    language === 'en'
-                      ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                  }`}
-                >
-                  EN
-                </button>
-                <button
-                  onClick={() => setLanguage('hi')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                    language === 'hi'
-                      ? 'bg-white dark:bg-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
-                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
-                  }`}
-                >
-                  हिंदी
-                </button>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {isTriagePath && language && (
+                <div className="flex items-center bg-gray-100 dark:bg-gray-855 rounded-xl p-1 border border-gray-200 dark:border-gray-800 shadow-inner">
+                  <button
+                    onClick={() => setLanguage('en')}
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      language === 'en'
+                        ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                    }`}
+                  >
+                    EN
+                  </button>
+                  <button
+                    onClick={() => setLanguage('hi')}
+                    className={`px-3 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      language === 'hi'
+                        ? 'bg-white dark:bg-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                    }`}
+                  >
+                    हिंदी
+                  </button>
+                </div>
+              )}
 
-            {isTriagePath && (
-              <button
-                onClick={handleResetDemo}
-                className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 rounded-xl font-bold flex items-center gap-2 text-xs transition-all cursor-pointer"
-                title="New Chat"
-              >
-                <FaSync className="text-[10px]" />
-                <span>{t.resetBtn}</span>
-              </button>
-            )}
+              {isTriagePath && (
+                <button
+                  onClick={handleResetDemo}
+                  className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 rounded-xl font-bold flex items-center gap-2 text-xs transition-all cursor-pointer"
+                  title="New Chat"
+                >
+                  <FaSync className="text-[10px]" />
+                  <span>{t.resetBtn}</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>
