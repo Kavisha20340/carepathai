@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore';
 import { translations, specialistTranslations } from '../utils/translations';
 
 export default function DoctorSearch() {
-  const { triageResult, doctors, searchDoctors, isLoading, setError, language } = useStore();
+  const { triageResult, doctors, searchDoctors, isDoctorsLoading, setError, language } = useStore();
   const [radiusInput, setRadiusInput] = useState("10");
   const [isCustomRadius, setIsCustomRadius] = useState(false);
   const [ratingRange, setRatingRange] = useState("4.6-5");
@@ -200,11 +200,11 @@ export default function DoctorSearch() {
 
       <button
         onClick={handleSearch}
-        disabled={isLoading || locState === 'fetching'}
+        disabled={isDoctorsLoading || locState === 'fetching'}
         className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
       >
         <FaSearch />
-        <span>{isLoading ? t.searchingGooglePlaces : t.btnSearchDoctors.replace('{specialist}', translatedSpecialist)}</span>
+        <span>{isDoctorsLoading ? t.searchingGooglePlaces : t.btnSearchDoctors.replace('{specialist}', translatedSpecialist)}</span>
       </button>
 
       {doctors && doctors.length > 0 ? (
@@ -257,7 +257,7 @@ export default function DoctorSearch() {
           ))}
         </div>
       ) : (
-        !isLoading && (
+        !isDoctorsLoading && (
           <div className="p-5 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-200 dark:border-gray-800 text-center mt-2">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 leading-relaxed">
               {hasSearched ? t.noDoctorsFound : t.resultsPlaceholder}

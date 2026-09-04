@@ -59,6 +59,7 @@ export const useStore = create((set, get) => ({
 
   // UI/UX Statuses
   isLoading: false,
+  isDoctorsLoading: false,
   isRecording: false,
   error: null,
   emergencyMessage: null,
@@ -89,6 +90,7 @@ export const useStore = create((set, get) => ({
       triageResult: null,
       doctors: [],
       isLoading: false,
+      isDoctorsLoading: false,
       isRecording: false,
       error: null,
       emergencyMessage: null,
@@ -234,7 +236,7 @@ export const useStore = create((set, get) => ({
 
   // 3. Search for nearby doctors
   searchDoctors: async (specialistType, lat, lng, radiusKm = 10.0, minRating = 0.0, maxRating = 5.0) => {
-    set({ isLoading: true, error: null })
+    set({ isDoctorsLoading: true, error: null })
     try {
       const response = await axios.post(`${API_BASE_URL}/doctors`, {
         specialist_type: specialistType,
@@ -250,12 +252,12 @@ export const useStore = create((set, get) => ({
 
       set({
         doctors: response.data.doctors || [],
-        isLoading: false
+        isDoctorsLoading: false
       })
     } catch (err) {
       console.error("Doctors search error:", err)
       const errMsg = err.response?.data?.detail || err.message || "Failed to search doctors. Please try again."
-      set({ isLoading: false, error: errMsg })
+      set({ isDoctorsLoading: false, error: errMsg })
     }
   }
 }))
