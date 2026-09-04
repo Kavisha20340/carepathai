@@ -1,6 +1,7 @@
 import logging
 import hashlib
 import html
+import asyncio
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -122,3 +123,13 @@ def translate_text(text: str, target_language: str = "hi") -> str:
             logger.warning(f"Firestore cache write error: {cache_write_err}")
 
     return translated_text if translated_text else text
+
+
+async def async_translate_text(text: str, target_language: str = "hi") -> str:
+    """
+    Asynchronous wrapper for translate_text that offloads execution to thread pool,
+    enabling parallel execution of multiple translation tasks via asyncio.gather().
+    """
+    if not text or not isinstance(text, str) or not text.strip():
+        return text
+    return await asyncio.to_thread(translate_text, text, target_language)

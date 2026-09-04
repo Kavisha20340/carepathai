@@ -1,12 +1,13 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Union
+import asyncio
 import logging
 from google.cloud import speech
 
 from backend.models import TriageRequest, FollowUpResponse, TriageCompleteResponse, EmergencyResponse, DoctorSearchRequest, DoctorSearchResponse, SessionState
 from backend.triage_logic import check_red_flags, apply_specialist_backstop, call_gemini_triage
-from backend.translation_logic import translate_text
+from backend.translation_logic import translate_text, async_translate_text
 from backend.places_logic import search_nearby_doctors
 from backend.auth_logic import verify_id_token
 from backend.firestore_logic import get_session, update_session
@@ -260,20 +261,42 @@ async def translate_results(session_id: str, language: str, uid: str = Depends(v
         if not session_doc:
             raise HTTPException(status_code=404, detail="Session not found.")
 
-        triage_result = session_doc.get("triage_result", {})
-        session_state = session_doc.get("slot_fields", {})
+        triage_result = dict(session_doc.get("triage_result", {}))
+        session_state = dict(session_doc.get("slot_fields", {}))
 
-        # Translate all session_state slot fields regardless of target language (hi or en)
+        # Collect translation jobs for concurrent parallel execution
+        jobs = []
+
+        # 1. Collect session_state tasks
         for key, value in session_state.items():
-            if isinstance(value, str) and value:
-                session_state[key] = translate_text(value, language)
+            if isinstance(value, str) and value.strip():
+                jobs.append(("session_state_str", key, async_translate_text(value, language)))
             elif isinstance(value, list) and value:
-                session_state[key] = [translate_text(item, language) for item in value if isinstance(item, str)]
+                for idx, item in enumerate(value):
+                    if isinstance(item, str) and item.strip():
+                        jobs.append(("session_state_list", (key, idx), async_translate_text(item, language)))
 
-        # Translate reasoning summary and any clinical text inside triage_result
+        # 2. Collect triage_result tasks
         for key in ["reasoning_summary", "chief_complaint", "clinical_reasoning"]:
-            if key in triage_result and isinstance(triage_result[key], str) and triage_result[key]:
-                triage_result[key] = translate_text(triage_result[key], language)
+            if key in triage_result and isinstance(triage_result[key], str) and triage_result[key].strip():
+                jobs.append(("triage_result", key, async_translate_text(triage_result[key], language)))
+
+        if jobs:
+            # Execute all translation jobs concurrently in parallel
+            results = await asyncio.gather(*[j[2] for j in jobs], return_exceptions=True)
+
+            for (target_type, target_key, _), translated_val in zip(jobs, results):
+                if isinstance(translated_val, Exception):
+                    logger.error(f"Translation job exception for {target_type} {target_key}: {translated_val}")
+                    continue
+
+                if target_type == "session_state_str":
+                    session_state[target_key] = translated_val
+                elif target_type == "session_state_list":
+                    s_key, s_idx = target_key
+                    session_state[s_key][s_idx] = translated_val
+                elif target_type == "triage_result":
+                    triage_result[target_key] = translated_val
 
         return TriageCompleteResponse(
             status="triage_complete",

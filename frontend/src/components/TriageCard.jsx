@@ -13,7 +13,7 @@ const getTranslatedSlotVal = (val, lang) => {
 };
 
 export default function TriageCard() {
-  const { triageResult, sessionState, language } = useStore();
+  const { triageResult, sessionState, language, isLoading } = useStore();
 
   if (!triageResult) return null;
 
@@ -85,9 +85,17 @@ export default function TriageCard() {
           <FaInfoCircle />
           <span>{t.clinicalReasoning}</span>
         </div>
-        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
-          {reasoning_summary}
-        </p>
+        {isLoading ? (
+          <div className="space-y-2 py-1 animate-pulse">
+            <div className="h-3.5 bg-indigo-200/60 dark:bg-indigo-900/50 rounded w-full"></div>
+            <div className="h-3.5 bg-indigo-200/60 dark:bg-indigo-900/50 rounded w-4/5"></div>
+            <div className="h-3.5 bg-indigo-200/60 dark:bg-indigo-900/50 rounded w-2/3"></div>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+            {reasoning_summary}
+          </p>
+        )}
         <span className="inline-block mt-2 text-[10px] text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-900 px-2.5 py-0.5 rounded-full border border-gray-100 dark:border-800 font-bold">
           {t.confidence}: {confidenceLabels[confidence] || confidence}
         </span>
@@ -114,9 +122,13 @@ export default function TriageCard() {
             return (
               <div key={key} className="flex flex-col gap-1 p-3 bg-gray-50/50 dark:bg-gray-900/50 rounded-xl border border-gray-100/40 dark:border-gray-800/40 text-xs text-left">
                 <span className="font-semibold text-gray-400 dark:text-gray-500">{slotLabels[key] || key}</span>
-                <span className={`font-bold capitalize leading-normal ${isFilled ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-300 dark:text-gray-650'}`}>
-                  {isFilled ? displayVal : t.notCaptured}
-                </span>
+                {isLoading ? (
+                  <div className="h-3.5 bg-indigo-100/60 dark:bg-gray-700/60 rounded w-3/4 animate-pulse mt-0.5"></div>
+                ) : (
+                  <span className={`font-bold capitalize leading-normal ${isFilled ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-300 dark:text-gray-650'}`}>
+                    {isFilled ? displayVal : t.notCaptured}
+                  </span>
+                )}
               </div>
             );
           })}
