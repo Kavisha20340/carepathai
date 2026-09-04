@@ -46,13 +46,13 @@ export default function EmergencyOverlay() {
 
   return (
     <div className="fixed inset-0 bg-red-600/90 dark:bg-red-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-lg w-full px-3.5 sm:px-4 md:px-5 pb-3.5 sm:pb-4 md:pb-5 pt-5 shadow-2xl border-4 border-red-500 text-center animate-scaleIn">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-lg w-full px-3.5 sm:px-7 md:px-8 pb-3.5 sm:pb-4 md:pb-5 pt-5 shadow-2xl border-4 border-red-500 text-center animate-scaleIn">
         {/* Icon & Title Header (Icon circle centered vertically with exact 20px top & bottom spacing) */}
         <div className="flex flex-col items-center justify-center">
-          <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center shadow-inner">
-            <FaExclamationTriangle className="text-2xl" />
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center shadow-inner">
+            <FaExclamationTriangle className="text-4xl" />
           </div>
-          <h1 className="text-xs sm:text-sm font-black text-red-600 dark:text-red-500 tracking-widest uppercase whitespace-nowrap leading-none px-4 mt-4">
+          <h1 className="text-[2px] sm:text-[2px] font-black text-red-600 dark:text-red-500 tracking-wide uppercase whitespace-nowrap leading-none px-0.8 py-0.8 mt-4 bg-red-50 dark:bg-red-950/20 rounded-lg inline-block">
             {t.criticalAlert}
           </h1>
         </div>
@@ -109,7 +109,7 @@ export default function EmergencyOverlay() {
         {/* Standalone Full-Width Start Over Button at Bottom */}
         <button
           onClick={handleRestart}
-          className="w-full py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-colors border border-gray-200 dark:border-gray-700 cursor-pointer"
+          className="w-full py-1.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-colors border border-gray-200 dark:border-gray-700 cursor-pointer"
         >
           <FaRedo className="text-[10px]" />
           <span>{t.btnRestart}</span>
