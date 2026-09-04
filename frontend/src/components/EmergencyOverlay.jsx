@@ -46,13 +46,13 @@ export default function EmergencyOverlay() {
 
   return (
     <div className="fixed inset-0 bg-red-600/90 dark:bg-red-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
-      <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-lg w-full p-3.5 sm:p-4 md:p-5 shadow-2xl border-4 border-red-500 text-center animate-scaleIn">
-        {/* Icon & Title Header (Zero excessive whitespace) */}
-        <div className="flex flex-col items-center mb-2">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-lg w-full px-3.5 sm:px-4 md:px-5 pb-3.5 sm:pb-4 md:pb-5 pt-5 shadow-2xl border-4 border-red-500 text-center animate-scaleIn">
+        {/* Icon & Title Header (Icon circle centered vertically with exact 20px top & bottom spacing) */}
+        <div className="flex flex-col items-center justify-center">
           <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center shadow-inner">
-            <FaExclamationTriangle className="text-2xl animate-bounce" />
+            <FaExclamationTriangle className="text-2xl" />
           </div>
-          <h1 className="text-[11px] sm:text-xs font-black text-red-600 dark:text-red-500 tracking-wider uppercase whitespace-nowrap leading-none mt-1 px-4">
+          <h1 className="text-xs sm:text-sm font-black text-red-600 dark:text-red-500 tracking-widest uppercase whitespace-nowrap leading-none px-4 mt-4">
             {t.criticalAlert}
           </h1>
         </div>
