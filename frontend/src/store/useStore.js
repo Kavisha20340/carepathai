@@ -126,6 +126,13 @@ export const useStore = create((set, get) => ({
         const response = await axios.post(`${API_BASE_URL}/translate-results?session_id=${sessionId}&language=${lang}`, {}, {
           headers: getHeaders()
         });
+
+        // Session Guard Check: Discard if session was reset while request was in-flight
+        if (sessionId !== get().sessionId) {
+          console.log("Discarding stale translation response from previous session:", sessionId);
+          return;
+        }
+
         const translatedTriageResult = response.data.triage_result;
         const translatedSessionState = response.data.updated_session_state;
 
@@ -142,6 +149,7 @@ export const useStore = create((set, get) => ({
           isLoading: false
         }));
       } catch (error) {
+        if (sessionId !== get().sessionId) return;
         console.error("Translation error:", error);
         set({ isLoading: false });
       }
@@ -170,6 +178,7 @@ export const useStore = create((set, get) => ({
 
   // 1. Transcribe audio to text
   transcribeAudio: async (audioBlob) => {
+    const requestSessionId = get().sessionId;
     set({ isLoading: true, error: null })
     try {
       const formData = new FormData()
@@ -182,6 +191,12 @@ export const useStore = create((set, get) => ({
         }
       })
 
+      // Session Guard Check: Discard if session was reset while request was in-flight
+      if (requestSessionId !== get().sessionId) {
+        console.log("Discarding stale transcription response from previous session:", requestSessionId);
+        return null;
+      }
+
       const transcript = response.data.transcript
       if (!transcript || transcript.trim() === '') {
         const lang = get().language || 'en'
@@ -192,6 +207,7 @@ export const useStore = create((set, get) => ({
       set({ isLoading: false })
       return transcript
     } catch (err) {
+      if (requestSessionId !== get().sessionId) return null;
       console.error("Transcription error:", err)
       const errMsg = err.response?.data?.detail || err.message || "Failed to transcribe audio. Please try typing or recording again."
       set({ isLoading: false, error: errMsg })
@@ -201,8 +217,9 @@ export const useStore = create((set, get) => ({
 
   // 2. Submit transcript to triage endpoint
   submitTriageTurn: async (transcript) => {
+    const requestSessionId = get().sessionId;
     set({ isLoading: true, error: null })
-    const { sessionId, turnCount, maxTurns, language } = get()
+    const { turnCount, maxTurns, language } = get()
     const nextTurn = turnCount + 1
 
     // Append user message immediately to the conversation history
@@ -217,13 +234,19 @@ export const useStore = create((set, get) => ({
     try {
       const response = await axios.post(`${API_BASE_URL}/triage`, {
         transcript,
-        session_id: sessionId,
+        session_id: requestSessionId,
         turn_count: nextTurn,
         max_turns: maxTurns,
         language: language
       }, {
         headers: getHeaders()
       })
+
+      // Session Guard Check: Discard if session was reset while request was in-flight
+      if (requestSessionId !== get().sessionId) {
+        console.log("Discarding stale triage response from previous session:", requestSessionId);
+        return;
+      }
 
       const data = response.data
       console.log("Triage API response:", data)
@@ -261,6 +284,7 @@ export const useStore = create((set, get) => ({
         }));
       }
     } catch (err) {
+      if (requestSessionId !== get().sessionId) return;
       console.error("Triage error:", err)
       const errMsg = err.response?.data?.detail || err.message || "Triage processing failed. Please try again."
       set({ isLoading: false, error: errMsg })
@@ -269,6 +293,7 @@ export const useStore = create((set, get) => ({
 
   // 3. Search for nearby doctors
   searchDoctors: async (specialistType, lat, lng, radiusKm = 10.0, minRating = 0.0, maxRating = 5.0) => {
+    const requestSessionId = get().sessionId;
     set({ isDoctorsLoading: true, error: null })
     try {
       const response = await axios.post(`${API_BASE_URL}/doctors`, {
@@ -283,11 +308,18 @@ export const useStore = create((set, get) => ({
         headers: getHeaders()
       })
 
+      // Session Guard Check: Discard if session was reset while request was in-flight
+      if (requestSessionId !== get().sessionId) {
+        console.log("Discarding stale doctors search response from previous session:", requestSessionId);
+        return;
+      }
+
       set({
         doctors: response.data.doctors || [],
         isDoctorsLoading: false
       })
     } catch (err) {
+      if (requestSessionId !== get().sessionId) return;
       console.error("Doctors search error:", err)
       const errMsg = err.response?.data?.detail || err.message || "Failed to search doctors. Please try again."
       set({ isDoctorsLoading: false, error: errMsg })
