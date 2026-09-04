@@ -116,7 +116,7 @@ export default function MicInput() {
   }
   else if (recordState === 'stopping') { 
     btnColor = 'bg-gray-400 animate-pulse'
-    btnLabel = isHindi ? 'ऑडियो सेव हो रहा है...' : 'Saving audio...' 
+    btnLabel = isHindi ? 'ऑडियो प्रोसेस हो रहा है...' : 'Processing audio...' 
   }
   else if (isLoading) { 
     btnColor = 'bg-gray-400'

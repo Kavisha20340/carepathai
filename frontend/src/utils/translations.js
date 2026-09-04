@@ -24,7 +24,7 @@ export const translations = {
     btnSpeak: "Tap to speak symptoms",
     btnStarting: "Waking up microphone...",
     btnRecording: "Recording... Click to Stop",
-    btnStopping: "Saving audio...",
+    btnStopping: "Processing audio...",
     btnAnalyzing: "Analyzing symptoms...",
     errNoSpeech: "Speech-to-text was unable to capture any words. Please try speaking again.",
 
@@ -106,7 +106,7 @@ export const translations = {
     btnSpeak: "लक्षण बताने के लिए बोलें",
     btnStarting: "माइक्रोफोन चालू हो रहा है...",
     btnRecording: "रिकॉर्डिंग हो रही है... रोकने के लिए क्लिक करें",
-    btnStopping: "ऑडियो सेव हो रहा है...",
+    btnStopping: "ऑडियो प्रोसेस हो रहा है...",
     btnAnalyzing: "लक्षणों का विश्लेषण हो रहा है...",
     errNoSpeech: "आपकी आवाज़ पहचानी नहीं जा सकी। कृपया पुनः बोलने का प्रयास करें।",
 

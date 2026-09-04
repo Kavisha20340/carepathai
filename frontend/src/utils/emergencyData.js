@@ -28,7 +28,7 @@ export const getEmergencyNumbers = () => ({
     },
     {
       number: "+919820466726",
-      displayNumber: "+91 98204 66726",
+      displayNumber: "98204 66726",
       title: "AASRA Suicide Prevention",
       desc: "24/7 suicide prevention & emotional support",
       iconType: "chat"
@@ -76,7 +76,7 @@ export const getEmergencyNumbers = () => ({
     },
     {
       number: "+919820466726",
-      displayNumber: "+91 98204 66726",
+      displayNumber: "98204 66726",
       title: "आसरा (AASRA) संकट हेल्पलाइन",
       desc: "24/7 आत्महत्या रोकथाम और भावनात्मक सहायता सेवा",
       iconType: "chat"
