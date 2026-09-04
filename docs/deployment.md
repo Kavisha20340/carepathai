@@ -178,15 +178,20 @@ The frontend will compile, containerize, and host itself on its own secure URL:
 
 Google Cloud Run is highly cost-efficient and automatically scales down to zero when idle, keeping development and testing costs at **$0.00**.
 
-*   **Turn Services Completely OFF (Scale down to 0 instances):**
+*   **How Billing/Scaling Works (Scale Down to 0 automatically):**
+    Google Cloud Run automatically shuts down all active container instances when there is no incoming traffic. Therefore, if no one is visiting your website, the service **already scales down to 0 active instances naturally**, costing you exactly **$0.00** without you having to run any commands!
+    
+*   **Pause Services Completely (Disable public internet access):**
+    Because the Knative autoscaler requires `max-instances` to be a positive integer (>= 1), setting `--max-instances=0` is invalid and will throw an error. If you want to **fully disable public traffic** to make the services private (preventing anyone from using them), revoke the public invoke permissions:
     ```powershell
-    gcloud run services update carepathai-frontend --region=asia-south1 --max-instances=0
-    gcloud run services update carepathai-backend --region=asia-south1 --max-instances=0
+    gcloud run services remove-iam-policy-binding carepathai-frontend --region=asia-south1 --member="allUsers" --role="roles/run.invoker"
+    gcloud run services remove-iam-policy-binding carepathai-backend --region=asia-south1 --member="allUsers" --role="roles/run.invoker"
     ```
-*   **Scale Services Back ON (Allow up to 10 instances scaling dynamically):**
+    
+*   **Unpause Services (Restore public internet access):**
     ```powershell
-    gcloud run services update carepathai-frontend --region=asia-south1 --max-instances=10
-    gcloud run services update carepathai-backend --region=asia-south1 --max-instances=10
+    gcloud run services add-iam-policy-binding carepathai-frontend --region=asia-south1 --member="allUsers" --role="roles/run.invoker"
+    gcloud run services add-iam-policy-binding carepathai-backend --region=asia-south1 --member="allUsers" --role="roles/run.invoker"
     ```
 *   **Optimize Cold Start Latency (Keep minimum 1 warm instance online):**
     *Note: Keeping a minimum instance active does bypass scaling to zero, which may incur slight billing costs.*
