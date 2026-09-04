@@ -1,15 +1,15 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Any, Union
 
 class SessionState(BaseModel):
     chief_complaint: Optional[str] = None
     body_location: Optional[str] = None
-    onset: Optional[Literal['sudden', 'gradual', 'unknown']] = None
+    onset: Optional[str] = None
     duration: Optional[str] = None
-    severity: Optional[int] = Field(None, ge=1, le=10)
-    associated_symptoms: List[str] = []
+    severity: Optional[Any] = None
+    associated_symptoms: List[str] = Field(default_factory=list)
     aggravating_factors: Optional[str] = None
-    red_flags_present: List[str] = []
+    red_flags_present: List[str] = Field(default_factory=list)
     relevant_history: Optional[str] = None
 
 class TriageRequest(BaseModel):
@@ -56,6 +56,7 @@ class DoctorSearchRequest(BaseModel):
     radius_km: float = Field(default=10.0, ge=0.1, le=50.0)
     max_results: int = Field(default=5, ge=1, le=20)
     min_rating: float = Field(default=4.0, ge=0.0, le=5.0)
+    max_rating: float = Field(default=5.0, ge=0.0, le=5.0)
 
 class Doctor(BaseModel):
     name: str

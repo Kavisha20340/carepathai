@@ -11,9 +11,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize Vertex AI
+gemini_model = None
 try:
     vertexai.init(project="carepathai", location="us-central1")
-    logger.info("Vertex AI successfully initialized in triage_logic.")
+    gemini_model = GenerativeModel("gemini-2.5-flash")
+    logger.info("Vertex AI and GenerativeModel successfully initialized in triage_logic.")
 except Exception as e:
     logger.error(f"Failed to initialize Vertex AI: {e}")
 

@@ -7,42 +7,106 @@ export default function DoctorSearch() {
   const { triageResult, doctors, searchDoctors, isLoading, setError, language } = useStore();
   const [radiusInput, setRadiusInput] = useState("10");
   const [isCustomRadius, setIsCustomRadius] = useState(false);
+  const [ratingRange, setRatingRange] = useState("4.6-5");
+  const [hasSearched, setHasSearched] = useState(false);
   const [coords, setCoords] = useState(null);
   const [locState, setLocState] = useState('idle');
 
   const t = translations[language || 'en'];
   const sT = specialistTranslations[language || 'en'];
 
-  useEffect(() => {
-    if (triageResult && !coords) {
-      setLocState('fetching');
-      navigator.geolocation.getCurrentPosition(
-        (p) => {
-          setCoords({ lat: p.coords.latitude, lng: p.coords.longitude });
-          setLocState('success');
-        },
-        (err) => {
-          console.error(err);
-          setCoords({ lat: 12.9716, lng: 77.5946 }); // Default Bangalore
-          setLocState('success');
-          setError("Location permission denied. Used Bangalore defaults for demo.");
-        }
-      );
+  const getMinMaxRating = (range) => {
+    switch (range) {
+      case "4.6-5":
+        return { min: 4.6, max: 5.0 };
+      case "4.1-4.5":
+        return { min: 4.1, max: 4.5 };
+      case "3.6-4.0":
+        return { min: 3.6, max: 4.0 };
+      case "3.1-3.5":
+        return { min: 3.1, max: 3.5 };
+      case "less-than-3.1":
+      default:
+        return { min: 0.0, max: 3.0 };
     }
-  }, [triageResult]);
+  };
+
+  const fetchLocation = () => {
+    if (!navigator.geolocation) {
+      setLocState('denied');
+      setCoords(null);
+      setError("Geolocation is not supported by your browser.");
+      return;
+    }
+    setLocState('fetching');
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setCoords({ lat: p.coords.latitude, lng: p.coords.longitude });
+        setLocState('success');
+      },
+      (err) => {
+        console.error("GPS location error:", err);
+        setCoords(null);
+        setLocState('denied');
+      }
+    );
+  };
+
+  useEffect(() => {
+    if (triageResult && !coords && locState === 'idle') {
+      fetchLocation();
+    }
+  }, [triageResult, coords, locState]);
 
   const handleSearch = async () => {
     if (!coords || !triageResult) return;
+    setHasSearched(true);
     
     // Extract numerical value and decimal points, e.g. "30km" -> "30", "3.5km" -> "3.5"
     const cleanRadius = radiusInput.replace(/[^0-9.]/g, '');
     const parsedRadius = parseFloat(cleanRadius);
     const finalRadius = isNaN(parsedRadius) || parsedRadius <= 0 ? 10.0 : parsedRadius;
     
-    await searchDoctors(triageResult.specialist_type, coords.lat, coords.lng, finalRadius);
+    const { min, max } = getMinMaxRating(ratingRange);
+    await searchDoctors(triageResult.specialist_type, coords.lat, coords.lng, finalRadius, min, max);
   };
 
+  // Auto-trigger search when filters change if the user has already searched at least once
+  useEffect(() => {
+    if (hasSearched && coords && triageResult && !isCustomRadius) {
+      const cleanRadius = radiusInput.replace(/[^0-9.]/g, '');
+      const parsedRadius = parseFloat(cleanRadius);
+      const finalRadius = isNaN(parsedRadius) || parsedRadius <= 0 ? 10.0 : parsedRadius;
+      
+      const { min, max } = getMinMaxRating(ratingRange);
+      searchDoctors(triageResult.specialist_type, coords.lat, coords.lng, finalRadius, min, max);
+    }
+  }, [ratingRange, radiusInput, hasSearched, coords, triageResult, isCustomRadius]);
+
   if (!triageResult) return null;
+
+  if (!coords) {
+    return (
+      <div className="w-full max-w-2xl mx-auto flex flex-col gap-6 p-6 bg-white dark:bg-gray-800 rounded-3xl shadow-xl text-center">
+        <div className="flex flex-col items-center justify-center p-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl gap-3">
+          <FaMapMarkerAlt className="text-4xl text-amber-500 animate-bounce" />
+          <h3 className="text-base font-bold text-gray-800 dark:text-gray-100">
+            {t.locationRequiredTitle}
+          </h3>
+          <p className="text-xs text-gray-600 dark:text-gray-300 max-w-md">
+            {t.locationRequiredMsg}
+          </p>
+          <button
+            onClick={fetchLocation}
+            disabled={locState === 'fetching'}
+            className="mt-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
+          >
+            {locState === 'fetching' ? t.gpsAcquiring : t.btnEnableLocation}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const specialist_type = triageResult.specialist_type;
   const translatedSpecialist = sT[specialist_type] || specialist_type;
@@ -113,6 +177,27 @@ export default function DoctorSearch() {
         </div>
       </div>
 
+      {/* Minimum Rating Controls Bar */}
+      <div className="flex items-center justify-between p-3.5 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl border border-gray-100/40 dark:border-gray-800/40 text-xs -mt-3">
+        <div className="flex flex-col gap-0.5 text-left">
+          <span className="font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t.minRatingLabel}</span>
+        </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <select
+            value={ratingRange}
+            onChange={(e) => setRatingRange(e.target.value)}
+            className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-200 shadow-sm focus:outline-none cursor-pointer hover:border-indigo-500 dark:hover:border-indigo-400 transition-all"
+          >
+            <option value="4.6-5">{t.ratingTopRated}</option>
+            <option value="4.1-4.5">{t.ratingHighlyRated}</option>
+            <option value="3.6-4.0">{t.ratingRecommended}</option>
+            <option value="3.1-3.5">{t.ratingAverage}</option>
+            <option value="less-than-3.1">{t.ratingLessThan31}</option>
+          </select>
+        </div>
+      </div>
+
       <button
         onClick={handleSearch}
         disabled={isLoading || locState === 'fetching'}
@@ -142,18 +227,27 @@ export default function DoctorSearch() {
 
               <p className="text-xs text-gray-500 mt-2">{doc.address}</p>
               
-              <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 text-xs font-semibold">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 text-xs font-semibold">
                 <span className="text-gray-400 font-medium">
                   {t.distanceLabel}: <span className="text-indigo-600 font-bold">{doc.distance_km?.toFixed(1)} {language === 'hi' ? 'किमी' : 'km'}</span>
                 </span>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {doc.phone_number && (
-                    <a href={`tel:${doc.phone_number}`} className="p-2 bg-gray-100 dark:bg-gray-800 text-gray-600 rounded-lg">
-                      <FaPhoneAlt />
+                    <a 
+                      href={`tel:${doc.phone_number}`} 
+                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-750 dark:text-gray-200 rounded-lg flex items-center gap-1.5 text-xs transition-all"
+                    >
+                      <FaPhoneAlt className="text-[10px] text-emerald-600 dark:text-emerald-400" />
+                      <span>{doc.phone_number}</span>
                     </a>
                   )}
-                  <a href={doc.directions_url} target="_blank" rel="noreferrer" className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 rounded-lg flex items-center gap-1 text-xs">
+                  <a 
+                    href={doc.directions_url} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded-lg flex items-center gap-1 text-xs transition-all"
+                  >
                     <FaDirections />
                     <span>{t.btnMap}</span>
                   </a>
@@ -163,7 +257,13 @@ export default function DoctorSearch() {
           ))}
         </div>
       ) : (
-        !isLoading && <p className="text-xs text-gray-400">{t.resultsPlaceholder}</p>
+        !isLoading && (
+          <div className="p-5 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-200 dark:border-gray-800 text-center mt-2">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 leading-relaxed">
+              {hasSearched ? t.noDoctorsFound : t.resultsPlaceholder}
+            </p>
+          </div>
+        )
       )}
     </div>
   );

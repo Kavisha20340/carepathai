@@ -98,7 +98,10 @@ export const useStore = create((set, get) => ({
   // Actions
   setLanguage: async (lang) => {
     localStorage.setItem('carepath_lang', lang);
-    const { sessionId, triageResult } = get();
+    const { sessionId, triageResult, conversationHistory } = get();
+
+    // Set language immediately in state so UI toggles instantly without delay or failure
+    set({ language: lang });
 
     if (triageResult) {
       set({ isLoading: true });
@@ -107,30 +110,30 @@ export const useStore = create((set, get) => ({
           headers: getHeaders()
         });
         set({
-          language: lang,
           triageResult: response.data.triage_result,
           sessionState: response.data.updated_session_state,
           isLoading: false
         });
       } catch (error) {
         console.error("Translation error:", error);
-        set({ isLoading: false, error: "Failed to translate results." });
+        set({ isLoading: false });
       }
     } else {
-      const greeting = lang === 'hi'
-        ? "CarePathAI में आपका स्वागत है! संक्षेप में अपने लक्षणों का वर्णन करें और हम आपको उच्च-रेटेड स्थानीय विशेषज्ञों के पास निर्देशित करेंगे।"
-        : "Welcome to CarePathAI! Briefly describe your symptoms and we will guide you to highly-rated local specialists.";
-      
-      set({
-        language: lang,
-        conversationHistory: [
-          {
-            role: 'assistant',
-            text: greeting,
-            timestamp: Date.now()
-          }
-        ]
-      });
+      if (!conversationHistory || conversationHistory.length <= 1) {
+        const greeting = lang === 'hi'
+          ? "CarePathAI में आपका स्वागत है! संक्षेप में अपने लक्षणों का वर्णन करें और हम आपको उच्च-रेटेड स्थानीय विशेषज्ञों के पास निर्देशित करेंगे।"
+          : "Welcome to CarePathAI! Briefly describe your symptoms and we will guide you to highly-rated local specialists.";
+        
+        set({
+          conversationHistory: [
+            {
+              role: 'assistant',
+              text: greeting,
+              timestamp: Date.now()
+            }
+          ]
+        });
+      }
     }
   },
 
@@ -230,7 +233,7 @@ export const useStore = create((set, get) => ({
   },
 
   // 3. Search for nearby doctors
-  searchDoctors: async (specialistType, lat, lng, radiusKm = 10.0) => {
+  searchDoctors: async (specialistType, lat, lng, radiusKm = 10.0, minRating = 0.0, maxRating = 5.0) => {
     set({ isLoading: true, error: null })
     try {
       const response = await axios.post(`${API_BASE_URL}/doctors`, {
@@ -239,7 +242,8 @@ export const useStore = create((set, get) => ({
         lng,
         radius_km: radiusKm,
         max_results: 8,
-        min_rating: 4.0
+        min_rating: parseFloat(minRating),
+        max_rating: parseFloat(maxRating)
       }, {
         headers: getHeaders()
       })

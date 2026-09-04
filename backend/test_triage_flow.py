@@ -295,44 +295,83 @@ def test_haversine_calculation():
     print("SUCCESS: Haversine distance calculations are geometrically accurate!")
 
 def test_doctors_endpoint_with_ranking_and_fallback():
-    print_separator("POST /doctors Endpoint & Ranking (Fallback Cache)")
+    print_separator("POST /doctors Endpoint & Ranking Verification")
+    from unittest.mock import patch, MagicMock
+    
+    mock_places_response = {
+        "results": [
+            {
+                "name": "Orthopedic Center A",
+                "geometry": {"location": {"lat": 19.0650, "lng": 72.8400}},
+                "vicinity": "Near Bandra Terminus, Mumbai",
+                "rating": 4.9,
+                "place_id": "ChIJA123"
+            },
+            {
+                "name": "Orthopedic Center B",
+                "geometry": {"location": {"lat": 19.0700, "lng": 72.8300}},
+                "vicinity": "Linking Road, Bandra, Mumbai",
+                "rating": 4.7,
+                "place_id": "ChIJB456"
+            },
+            {
+                "name": "Orthopedic Center C",
+                "geometry": {"location": {"lat": 19.0550, "lng": 72.8500}},
+                "vicinity": "Carter Road, Bandra, Mumbai",
+                "rating": 4.7,
+                "place_id": "ChIJC789"
+            }
+        ]
+    }
+    
+    mock_client = MagicMock()
+    mock_client.places_nearby.return_value = mock_places_response
+    mock_client.place.return_value = {
+        "result": {
+            "formatted_address": "Mock Clinic Street Address, Bandra, Mumbai",
+            "formatted_phone_number": "+91 22 1234 5678"
+        }
+    }
     
     payload = {
         "specialist_type": "orthopedic",
         "lat": 19.0600,
         "lng": 72.8360,
-        "radius_km": 5.0
+        "radius_km": 5.0,
+        "min_rating": 4.6,
+        "max_rating": 5.0
     }
     
-    response = client.post("/doctors", json=payload)
-    print(f"Status Code: {response.status_code}")
-    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
-    
-    assert response.status_code == 200
-    data = response.json()
-    assert data["status"] == "success"
-    doctors = data["doctors"]
-    assert len(doctors) >= 3
-    
-    # Verify ranking logic: sorted by rating (descending), then distance (ascending) as a tie-breaker
-    last_rating = 5.1
-    last_distance = -1.0
-    for idx, d in enumerate(doctors):
-        assert d["name"] is not None
-        assert d["specialty_tag"] == "Orthopedic"
-        assert d["rating"] <= 5.0
-        assert d["distance_km"] > 0.0
-        assert d["address"] is not None
-        assert "directions_url" in d
+    with patch("backend.places_logic.gmaps_client", mock_client):
+        response = client.post("/doctors", json=payload)
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
         
-        if d["rating"] < last_rating:
-            pass
-        elif d["rating"] == last_rating:
-            assert d["distance_km"] >= last_distance, f"Ranking error at index {idx}: Equal rating but distance is not sorted ascending!"
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
+        doctors = data["doctors"]
+        assert len(doctors) >= 3
+        
+        # Verify ranking logic: sorted by rating (descending), then distance (ascending) as a tie-breaker
+        last_rating = 5.1
+        last_distance = -1.0
+        for idx, d in enumerate(doctors):
+            assert d["name"] is not None
+            assert d["specialty_tag"] == "Orthopedic"
+            assert d["rating"] <= 5.0
+            assert d["distance_km"] > 0.0
+            assert d["address"] is not None
+            assert "directions_url" in d
             
-        last_rating = d["rating"]
-        last_distance = d["distance_km"]
-        
+            if d["rating"] < last_rating:
+                pass
+            elif d["rating"] == last_rating:
+                assert d["distance_km"] >= last_distance, f"Ranking error at index {idx}: Equal rating but distance is not sorted ascending!"
+                
+            last_rating = d["rating"]
+            last_distance = d["distance_km"]
+            
     print("SUCCESS: Doctor search endpoint and ranking rules (Rating Desc -> Distance Asc) are fully valid!")
 
 

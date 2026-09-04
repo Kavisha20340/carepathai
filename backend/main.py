@@ -263,15 +263,17 @@ async def translate_results(session_id: str, language: str, uid: str = Depends(v
         triage_result = session_doc.get("triage_result", {})
         session_state = session_doc.get("slot_fields", {})
 
-        if language != "en":
-            for key, value in session_state.items():
-                if isinstance(value, str):
-                    session_state[key] = translate_text(value, language)
-                elif isinstance(value, list):
-                    session_state[key] = [translate_text(item, language) for item in value]
+        # Translate all session_state slot fields regardless of target language (hi or en)
+        for key, value in session_state.items():
+            if isinstance(value, str) and value:
+                session_state[key] = translate_text(value, language)
+            elif isinstance(value, list) and value:
+                session_state[key] = [translate_text(item, language) for item in value if isinstance(item, str)]
 
-            if "reasoning_summary" in triage_result:
-                triage_result["reasoning_summary"] = translate_text(triage_result["reasoning_summary"], language)
+        # Translate reasoning summary and any clinical text inside triage_result
+        for key in ["reasoning_summary", "chief_complaint", "clinical_reasoning"]:
+            if key in triage_result and isinstance(triage_result[key], str) and triage_result[key]:
+                triage_result[key] = translate_text(triage_result[key], language)
 
         return TriageCompleteResponse(
             status="triage_complete",
