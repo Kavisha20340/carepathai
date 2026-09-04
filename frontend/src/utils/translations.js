@@ -72,11 +72,10 @@ export const translations = {
     btnMap: "Map Directions",
 
     // Emergency Overlay
-    criticalAlert: "CRITICAL RED FLAG TRIGGERED",
+    criticalAlert: "Medical Emergency",
     emergencyAlertText: "This may be a medical emergency. Please call emergency services or go to the nearest ER immediately.",
-    emergencySuspendedText: "This system has suspended automated triage. Please contact local emergency services immediately.",
     btnCall112: "Call Emergency Services (112)",
-    btnRestart: "Reset App & Start Over",
+    btnRestart: "Start Over",
 
     // Footer
     footerText: "© {year} CarepathAI. Built for Google Patchamomma 2026.",
@@ -155,11 +154,10 @@ export const translations = {
     btnMap: "नक्शा / दिशा-निर्देश",
 
     // Emergency Overlay
-    criticalAlert: "महत्वपूर्ण आपातकालीन लक्षण मिले!",
+    criticalAlert: "आपातकालीन चिकित्सा",
     emergencyAlertText: "यह एक गंभीर चिकित्सा आपातकाल हो सकता है। कृपया आपातकालीन सेवाओं को कॉल करें या तुरंत नजदीकी अस्पताल के इमरजेंसी (ER) में जाएं।",
-    emergencySuspendedText: "सिस्टम ने ट्राइएज को स्थगित कर दिया है। कृपया तुरंत आपातकालीन सेवाओं से संपर्क करें।",
     btnCall112: "आपातकालीन सेवा (112) को कॉल करें",
-    btnRestart: "ऐप रीसेट करें और पुनः प्रारंभ करें",
+    btnRestart: "नया चैट",
 
     // Footer
     footerText: "© {year} केयरपाथएआई। गूगल पचामोमा 2026 के लिए निर्मित।",
