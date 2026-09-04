@@ -55,6 +55,7 @@ export const useStore = create((set, get) => ({
   },
   conversationHistory: getInitialGreeting(restoredLang),
   triageResult: null,
+  triageResultCache: { en: null, hi: null },
   doctors: [],
 
   // UI/UX Statuses
@@ -88,6 +89,7 @@ export const useStore = create((set, get) => ({
       },
       conversationHistory: getInitialGreeting(lang),
       triageResult: null,
+      triageResultCache: { en: null, hi: null },
       doctors: [],
       isLoading: false,
       isDoctorsLoading: false,
@@ -100,22 +102,45 @@ export const useStore = create((set, get) => ({
   // Actions
   setLanguage: async (lang) => {
     localStorage.setItem('carepath_lang', lang);
-    const { sessionId, triageResult, conversationHistory } = get();
+    const { sessionId, triageResult, conversationHistory, triageResultCache } = get();
 
-    // Set language immediately in state so UI toggles instantly without delay or failure
+    // Set language immediately in state so UI headers and static elements toggle instantly
     set({ language: lang });
 
     if (triageResult) {
+      // Check dual-language in-memory cache
+      const cached = triageResultCache ? triageResultCache[lang] : null;
+      if (cached && cached.triageResult && cached.sessionState) {
+        // Cache HIT: Switch immediately in 0ms without network call or loading shimmer!
+        set({
+          triageResult: cached.triageResult,
+          sessionState: cached.sessionState,
+          isLoading: false
+        });
+        return;
+      }
+
+      // Cache MISS: Fetch translation once from backend and cache it
       set({ isLoading: true });
       try {
         const response = await axios.post(`${API_BASE_URL}/translate-results?session_id=${sessionId}&language=${lang}`, {}, {
           headers: getHeaders()
         });
-        set({
-          triageResult: response.data.triage_result,
-          sessionState: response.data.updated_session_state,
+        const translatedTriageResult = response.data.triage_result;
+        const translatedSessionState = response.data.updated_session_state;
+
+        set((state) => ({
+          triageResult: translatedTriageResult,
+          sessionState: translatedSessionState,
+          triageResultCache: {
+            ...state.triageResultCache,
+            [lang]: {
+              triageResult: translatedTriageResult,
+              sessionState: translatedSessionState
+            }
+          },
           isLoading: false
-        });
+        }));
       } catch (error) {
         console.error("Translation error:", error);
         set({ isLoading: false });
@@ -221,11 +246,19 @@ export const useStore = create((set, get) => ({
           isLoading: false
         }))
       } else if (data.status === 'triage_complete') {
-        set({
+        const currentLang = get().language || 'en';
+        set((state) => ({
           sessionState: data.updated_session_state,
           triageResult: data.triage_result,
+          triageResultCache: {
+            ...state.triageResultCache,
+            [currentLang]: {
+              triageResult: data.triage_result,
+              sessionState: data.updated_session_state
+            }
+          },
           isLoading: false
-        })
+        }));
       }
     } catch (err) {
       console.error("Triage error:", err)
