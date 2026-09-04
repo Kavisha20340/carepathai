@@ -4,6 +4,10 @@ FROM node:20-slim as build
 # Set the working directory in the container
 WORKDIR /app
 
+# Declare the API Base URL build-time argument (defaults to local backend if not specified)
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
 # Copy package.json and package-lock.json to the working directory
 COPY package.json package-lock.json ./
 

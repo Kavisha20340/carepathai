@@ -1,7 +1,12 @@
 steps:
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'asia-south1-docker.pkg.dev/carepathai/carepathai-repo/carepathai-frontend:$BUILD_ID', './frontend']
+    args: [
+      'build',
+      '--build-arg', 'VITE_API_BASE_URL=$_VITE_API_BASE_URL',
+      '-t', 'asia-south1-docker.pkg.dev/carepathai/carepathai-repo/carepathai-frontend:$BUILD_ID',
+      './frontend'
+    ]
 
   # Push the container image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
@@ -22,5 +27,8 @@ steps:
 
 images:
   - 'asia-south1-docker.pkg.dev/carepathai/carepathai-repo/carepathai-frontend:$BUILD_ID'
+
+substitutions:
+  _VITE_API_BASE_URL: ''
 
 

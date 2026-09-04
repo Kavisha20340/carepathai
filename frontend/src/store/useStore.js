@@ -2,8 +2,8 @@ import { create } from 'zustand'
 import axios from 'axios'
 import { translations } from '../utils/translations'
 
-// API Base URL - points to our running local backend
-const API_BASE_URL = 'http://127.0.0.1:8000'
+// API Base URL - points to our deployed backend or falls back to local development
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
 
 // Common headers for our requests - using the developer mock token bypass
 const getHeaders = () => ({

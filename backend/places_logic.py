@@ -17,6 +17,10 @@ API_KEY = os.getenv("PLACES_API_KEY")
 gmaps_client = None
 
 if API_KEY:
+    # Clean leading/trailing whitespace, quotes, or carriage returns from secret mounting
+    API_KEY = API_KEY.strip().strip('"').strip("'").strip()
+
+if API_KEY:
     try:
         gmaps_client = googlemaps.Client(key=API_KEY)
         logger.info("Google Maps Places API client initialized successfully.")
