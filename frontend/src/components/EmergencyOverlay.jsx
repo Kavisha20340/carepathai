@@ -97,10 +97,10 @@ export default function EmergencyOverlay() {
               </div>
               <a
                 href={`tel:${s.number}`}
-                className="px-2 py-0.5 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-850 dark:text-gray-150 text-[10px] font-extrabold rounded-lg flex items-center gap-1 transition-all border border-gray-200 dark:border-gray-600 flex-shrink-0 cursor-pointer"
+                className="w-28 h-7 px-2 bg-white hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-650 text-gray-850 dark:text-gray-150 text-[10px] font-extrabold rounded-lg flex items-center justify-center gap-1 transition-all border border-gray-200 dark:border-gray-600 flex-shrink-0 whitespace-nowrap cursor-pointer"
               >
-                <FaPhoneAlt className="text-[8px] text-red-600" />
-                <span>{s.displayNumber || s.number}</span>
+                <FaPhoneAlt className="text-[8px] text-red-600 flex-shrink-0" />
+                <span className="whitespace-nowrap">{s.displayNumber || s.number}</span>
               </a>
             </div>
           ))}

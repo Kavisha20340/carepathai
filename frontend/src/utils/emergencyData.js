@@ -17,33 +17,33 @@ export const getEmergencyNumbers = () => ({
     {
       number: "102",
       title: "102 — Pregnancy & Infant Care",
-      desc: "Free state health department ambulance service focused on maternal/infant transport.",
+      desc: "Free state maternal/infant ambulance transport",
       iconType: "baby"
     },
     {
       number: "14416",
       title: "14416 — TeleMANAS Helpline",
-      desc: "Government national mental health and suicide prevention service (24/7, multilingual).",
+      desc: "Govt mental health & suicide prevention (24/7)",
       iconType: "brain"
     },
     {
       number: "+919820466726",
       displayNumber: "+91 98204 66726",
       title: "AASRA Suicide Prevention",
-      desc: "24/7 national suicide prevention and professional emotional support service.",
+      desc: "24/7 suicide prevention & emotional support",
       iconType: "chat"
     },
     {
       number: "9152987821",
       displayNumber: "9152987821",
       title: "iCall (TISS)",
-      desc: "Psychosocial counseling helpline run by Tata Institute of Social Sciences (Mon–Sat).",
+      desc: "Psychosocial counseling by TISS (Mon–Sat)",
       iconType: "chat"
     },
     {
       number: "1066",
       title: "1066 — Poison Information (AIIMS)",
-      desc: "National Poison Information Centre at AIIMS Delhi for toxic exposure advice (24/7).",
+      desc: "AIIMS poison information & advice (24/7)",
       iconType: "poison"
     }
   ],
@@ -65,33 +65,33 @@ export const getEmergencyNumbers = () => ({
     {
       number: "102",
       title: "102 — गर्भावस्था और शिशु स्वास्थ्य",
-      desc: "गर्भवती महिलाओं और नवजात शिशुओं की देखभाल और परिवहन पर केंद्रित सरकारी एम्बुलेंस सेवा।",
+      desc: "गर्भवती महिलाओं और नवजात शिशुओं के लिए मुफ्त सरकारी एम्बुलेंस",
       iconType: "baby"
     },
     {
       number: "14416",
       title: "14416 — टेली-मानस हेल्पलाइन",
-      desc: "सरकारी राष्ट्रीय मानसिक स्वास्थ्य और आत्महत्या रोकथाम सेवा (24/7, बहुभाषी)।",
+      desc: "सरकारी राष्ट्रीय मानसिक स्वास्थ्य और आत्महत्या रोकथाम सेवा (24/7)",
       iconType: "brain"
     },
     {
       number: "+919820466726",
       displayNumber: "+91 98204 66726",
       title: "आसरा (AASRA) संकट हेल्पलाइन",
-      desc: "24/7 राष्ट्रीय आत्महत्या रोकथाम और व्यावसायिक मानसिक संकट सहायता सेवा।",
+      desc: "24/7 आत्महत्या रोकथाम और भावनात्मक सहायता सेवा",
       iconType: "chat"
     },
     {
       number: "9152987821",
       displayNumber: "9152987821",
       title: "आई-कॉल (iCall - TISS)",
-      desc: "टाटा इंस्टीट्यूट ऑफ सोशल साइंसेज द्वारा संचालित मनोसामाजिक परामर्श हेल्पलाइन (सोम-शनि)।",
+      desc: "टीआईएसएस (TISS) द्वारा संचालित मनोसामाजिक परामर्श हेल्पलाइन (सोम-शनि)",
       iconType: "chat"
     },
     {
       number: "1066",
       title: "1066 — राष्ट्रीय विष सूचना केंद्र (AIIMS)",
-      desc: "अचानक जहरीली वस्तुओं के सेवन या विषैले पदार्थ से संपर्क होने पर एम्स दिल्ली की 24/7 हेल्पलाइन।",
+      desc: "एम्स (AIIMS) दिल्ली की जहर और विषैले पदार्थ सूचना हेल्पलाइन (24/7)",
       iconType: "poison"
     }
   ]
