@@ -258,10 +258,10 @@ async def transcribe(file: UploadFile = File(...), language: str = "en"):
         # We use ENCODING_UNSPECIFIED so Google Speech-to-Text auto-detects WAV, WebM, Ogg, MP3, etc.
         config = speech.RecognitionConfig(
             encoding=speech.RecognitionConfig.AudioEncoding.ENCODING_UNSPECIFIED,
+            model="command_and_search",
             language_code=primary_lang,
             audio_channel_count=2,
             enable_separate_recognition_per_channel=True,
-            use_enhanced=True,  # Set to true to use enhanced models for higher accuracy (best practice)
             enable_automatic_punctuation=True,
             speech_contexts=speech_contexts,  # Add Speech Contexts!
         )
