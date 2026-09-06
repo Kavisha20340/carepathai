@@ -252,34 +252,35 @@ def test_happy_path_skin_rash_hindi():
 
 
 
-def test_transcribe_endpoint():
-    print_separator("Speech-to-Text Transcribe Endpoint")
-    import wave
-    import struct
-    
-    filename = "temp_test_silent.wav"
-    try:
-        with wave.open(filename, "wb") as wav:
-            wav.setnchannels(1)
-            wav.setsampwidth(2)
-            wav.setframerate(16000)
-            num_frames = 16000
-            for _ in range(num_frames):
-                wav.writeframesraw(struct.pack("<h", 0))
-                
-        with open(filename, "rb") as f:
-            response = client.post("/transcribe", files={"file": ("test.wav", f, "audio/wav")})
-            
-        print(f"Status Code: {response.status_code}")
-        print(f"Response: {response.json()}")
+    def test_transcribe_endpoint():
+        print_separator("Speech-to-Text Transcribe Endpoint")
+        import wave
+        import struct
         
-        assert response.status_code == 200
-        data = response.json()
-        assert "transcript" in data
-        print("SUCCESS: /transcribe endpoint completed successfully with Google Cloud STT!")
-    finally:
-        if os.path.exists(filename):
-            os.remove(filename)
+        filename = "temp_test_stereo.wav"
+        try:
+            with wave.open(filename, "wb") as wav:
+                wav.setnchannels(2) # Stereo
+                wav.setsampwidth(2)
+                wav.setframerate(16000)
+                num_frames = 16000
+                for _ in range(num_frames):
+                    # Write silent stereo frames
+                    wav.writeframesraw(struct.pack('<h', 0) + struct.pack('<h', 0))
+                    
+            with open(filename, "rb") as f:
+                response = client.post("/transcribe", files={"file": ("test.wav", f, "audio/wav")})
+                
+            print(f"Status Code: {response.status_code}")
+            print(f"Response: {response.json()}")
+            
+            assert response.status_code == 200
+            data = response.json()
+            assert "transcript" in data
+            print("SUCCESS: /transcribe endpoint completed successfully with Google Cloud STT!")
+        finally:
+            if os.path.exists(filename):
+                os.remove(filename)
 
 def test_haversine_calculation():
     print_separator("Geometrical Haversine Distance Calculation")

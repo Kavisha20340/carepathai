@@ -207,27 +207,61 @@ async def transcribe(file: UploadFile = File(...), language: str = "en"):
         
         # Configure Speech Adaptation (Phrase Boosting) with a medical/anatomical vocabulary
         # to bias the STT model to transcribe words like "knee" instead of "Ni" or "to" instead of "Tu".
+        phrases = [
+            "knee", "joint", "shoulder", "back pain", "elbow", "bone", "fracture", "sprain", "arthritis",
+            "skin", "rash", "itching", "acne", "pimple", "bump", "tender", "tender to touch",
+            "cough", "breathlessness", "asthma", "chest pain", "heart", "stomach", "abdominal",
+            "nausea", "vomiting", "diarrhea", "acidity", "ear", "nose", "throat", "it is", "to touch"
+        ]
+        
+        # Add common symptom-related words depending on pre-selected language to improve accent-specific accuracy
+        if language == "hi":
+            phrases.extend([
+                "बुखार", "दर्द", "सिरदर्द", "खांसी", "जुकाम", "उल्टी", "दस्त", "जलन", "कमजोरी", "थकान",
+                "अब", "दिन", "हफ्ते", "महीने", "से", "ज्यादा", "कम", "ठीक", "खराब"
+            ])
+        else:
+            phrases.extend([
+                "now", "fever", "pain", "severe", "days", "weeks", "months", "since", "headache", "cold", "flu",
+                "coughing", "sneezing", "congestion", "blockage", "runny nose", "sore throat", "burning sensation",
+                "burning", "sharp pain", "dull pain", "constantly", "on and off", "worse", "better", "improving"
+            ])
+
         speech_contexts = [
             speech.SpeechContext(
-                phrases=[
-                    "knee", "joint", "shoulder", "back pain", "elbow", "bone", "fracture", "sprain", "arthritis",
-                    "skin", "rash", "itching", "acne", "pimple", "bump", "tender", "tender to touch",
-                    "cough", "breathlessness", "asthma", "chest pain", "heart", "stomach", "abdominal",
-                    "nausea", "vomiting", "diarrhea", "acidity", "ear", "nose", "throat", "it is", "to touch"
-                ],
+                phrases=phrases,
                 boost=15.0  # High boost factor to ensure Google favors these phrases phonetically
             )
         ]
         
+        # Boost single-digit and multi-digit numbers to help with short utterances (like "seven")
+        number_phrases_en = [
+            "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+            "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"
+        ]
+        number_phrases_hi = [
+            "एक", "दो", "तीन", "चार", "पांच", "छह", "सात", "आठ", "नौ", "दस",
+            "१", "२", "३", "४", "५", "६", "७", "८", "९", "१०"
+        ]
+        number_phrases = number_phrases_hi if language == "hi" else number_phrases_en
+        
+        speech_contexts.append(
+            speech.SpeechContext(
+                phrases=number_phrases,
+                boost=20.0  # Very high boost factor to prioritize single-digit numbers in short clips
+            )
+        )
+        
         # Configure primary and alternative languages based on pre-selection
         primary_lang = "hi-IN" if language == "hi" else "en-IN"
-        
         
         # We use ENCODING_UNSPECIFIED so Google Speech-to-Text auto-detects WAV, WebM, Ogg, MP3, etc.
         config = speech.RecognitionConfig(
             encoding=speech.RecognitionConfig.AudioEncoding.ENCODING_UNSPECIFIED,
             language_code=primary_lang,
-            
+            audio_channel_count=2,
+            enable_separate_recognition_per_channel=True,
+            use_enhanced=True,  # Set to true to use enhanced models for higher accuracy (best practice)
             enable_automatic_punctuation=True,
             speech_contexts=speech_contexts,  # Add Speech Contexts!
         )
@@ -239,12 +273,12 @@ async def transcribe(file: UploadFile = File(...), language: str = "en"):
 
         
         # Extract transcribed text
-        transcript_parts = []
-        for result in response.results:
-            if result.alternatives:
-                transcript_parts.append(result.alternatives[0].transcript)
-                
-        transcript = " ".join(transcript_parts).strip()
+        # The API is now configured to handle stereo and will return a result for each channel.
+        # We only need the transcription from the first channel.
+        if response.results:
+            transcript = response.results[0].alternatives[0].transcript
+        else:
+            transcript = ""
         logger.info(f"Transcription complete. Transcribed text: '{transcript}'")
         
         return {"transcript": transcript}

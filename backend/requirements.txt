@@ -4,6 +4,8 @@ google-cloud-aiplatform
 google-cloud-speech
 google-cloud-translate
 google-cloud-firestore
+
+
 python-dotenv
 python-multipart
 httpx
