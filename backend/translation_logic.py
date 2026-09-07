@@ -2,6 +2,7 @@ import logging
 import hashlib
 import html
 import asyncio
+import os
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -23,6 +24,18 @@ except ImportError:
 # Initialize clients
 translate_client = None
 db = None
+genai_client = None
+
+try:
+    from google import genai
+    project_id = os.getenv("GCP_PROJECT", "carepathai")
+    genai_client = genai.Client(vertexai=True, project=project_id, location="us-central1")
+    # Quick probe test
+    genai_client.models.generate_content(model="gemini-2.5-flash", contents="ping")
+    logger.info("Successfully initialized Vertex AI Gemini 2.5 Flash client.")
+except Exception as gem_err:
+    logger.info(f"Vertex AI Gemini client init failed: {gem_err}. Will fallback gracefully.")
+    genai_client = None
 
 if translate is not None:
     try:
@@ -49,23 +62,60 @@ def translate_via_gemini(text: str, target_language: str) -> str:
     """
     Translates text using Vertex AI Gemini model when Google Translate API client is unavailable.
     """
+    if not genai_client:
+        return text
     try:
-        from backend.triage_logic import gemini_model
-        if not gemini_model:
-            return text
-            
         lang_name = "Hindi (Devanagari script)" if target_language == "hi" else "English"
         prompt = (
             f"You are a professional medical translator. Translate the following text accurately into natural, fluent {lang_name}. "
             f"Preserve clinical accuracy. Output ONLY the translation text without quotes or explanations.\n\n"
             f"Text:\n{text}"
         )
-        response = gemini_model.generate_content(prompt)
+        response = genai_client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
         translated = response.text.strip() if response and response.text else text
         return translated
     except Exception as e:
         logger.error(f"Gemini translation fallback error for '{text[:30]}...': {e}")
         return text
+
+
+def denoise_transcript_with_context(raw_transcript: str, conversation_history: list = None, language: str = 'en') -> str:
+    """
+    Uses Gemini Flash to perform rapid, context-aware acoustic denoising and correction on raw STT transcripts.
+    Corrects STT misrecognitions (e.g. 'climbing D stears' -> 'climbing the stairs', 'stretch' -> 'strenuous')
+    using the full conversation history context. Returns clean, clinical intent text.
+    """
+    if not raw_transcript or not raw_transcript.strip():
+        return raw_transcript
+
+    if not genai_client:
+        return raw_transcript
+
+    try:
+        history_str = "\n".join(conversation_history) if conversation_history else "None"
+        lang_name = "Hindi (Devanagari script)" if language == "hi" else "English"
+        
+        prompt = (
+            f"You are an expert clinical STT transcript denoiser.\n"
+            f"Fix acoustic speech-to-text typos, misheard words, and accent distortions in the raw transcript using the conversation history for context.\n\n"
+            f"CONVERSATION HISTORY:\n{history_str}\n\n"
+            f"RAW STT TRANSCRIPT:\n\"{raw_transcript}\"\n\n"
+            f"RULES:\n"
+            f"1. Fix misheard words based on medical and conversational context (e.g. 'climbing D stears' -> 'climbing the stairs', 'stretch exercise' -> 'strenuous exercise', 'Vel' -> 'well').\n"
+            f"2. Preserve exact patient meaning without changing reported symptoms or hallucinating new symptoms.\n"
+            f"3. Output language MUST be {lang_name}.\n"
+            f"4. Output ONLY the cleaned transcript string. No quotes, markdown, or explanations.\n"
+        )
+        logger.info(f"===> [OUTGOING API CALL: Gemini STT Denoiser] Raw: '{raw_transcript}' | Lang: '{language}'")
+        response = genai_client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        if response and response.text:
+            cleaned = response.text.strip().strip('"').strip("'")
+            logger.info(f"<=== [INCOMING API RESPONSE: Gemini STT Denoiser] Denoised: '{cleaned}'")
+            return cleaned
+        return raw_transcript
+    except Exception as e:
+        logger.warning(f"Transcript denoising error: {e}. Returning raw transcript.")
+        return raw_transcript
 
 
 def translate_text(text: str, target_language: str = "hi") -> str:
@@ -133,3 +183,53 @@ async def async_translate_text(text: str, target_language: str = "hi") -> str:
     if not text or not isinstance(text, str) or not text.strip():
         return text
     return await asyncio.to_thread(translate_text, text, target_language)
+
+
+try:
+    from google.cloud import speech
+except ImportError:
+    logger.warning("google-cloud-speech is not installed. Transcription services will be unavailable.")
+    speech = None
+
+speech_client = speech.SpeechClient() if speech else None
+
+def transcribe_audio(audio_file, language: str = "en") -> dict:
+    """
+    Transcribes an audio file to text using Google Cloud Speech-to-Text API.
+    Uses clean acoustic decoding with latest_long model.
+    """
+    if not speech_client:
+        raise HTTPException(status_code=500, detail="Speech-to-Text service is not configured.")
+
+    content = audio_file.read()
+    if not content or len(content) < 10:
+        return {"transcript": ""}
+
+    audio = speech.RecognitionAudio(content=content)
+
+    primary_lang = "hi-IN" if language == "hi" else "en-IN"
+
+    # Use "latest_long" for natural, un-warped acoustic dictation across BOTH languages.
+    # We do NOT use alternative_language_codes to prevent the API from auto-switching
+    # English speech into Devanagari script.
+    config = speech.RecognitionConfig(
+        encoding=speech.RecognitionConfig.AudioEncoding.ENCODING_UNSPECIFIED,
+        language_code=primary_lang,
+        model="latest_long",
+        audio_channel_count=2,
+        enable_automatic_punctuation=True,
+    )
+
+    logger.info(f"===> [OUTGOING API CALL: Google Speech-to-Text] Lang Code: '{primary_lang}' | Audio Size: {len(content)} bytes")
+    response = speech_client.recognize(config=config, audio=audio)
+
+    # Extract transcribed text
+    if response.results and response.results[0].alternatives:
+        transcript = response.results[0].alternatives[0].transcript.strip()
+    else:
+        transcript = ""
+
+    logger.info(f"<=== [INCOMING API RESPONSE: Google Speech-to-Text] Transcribed: '{transcript}'")
+
+    return {"transcript": transcript}
+

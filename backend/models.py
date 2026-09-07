@@ -18,6 +18,7 @@ class TriageRequest(BaseModel):
     turn_count: int
     max_turns: int = 3
     language: Optional[str] = "en"
+    input_modality: Optional[Literal['voice', 'text']] = 'voice' 
 
 
 class TriageResult(BaseModel):
@@ -35,11 +36,15 @@ class FollowUpResponse(BaseModel):
     status: Literal['follow_up']
     updated_session_state: SessionState
     follow_up_question: str
+    urgency_warning: Optional[str] = None
+    denoised_transcript: Optional[str] = None
 
 class TriageCompleteResponse(BaseModel):
     status: Literal['triage_complete']
     updated_session_state: SessionState
     triage_result: TriageResult
+    urgency_warning: Optional[str] = None
+    denoised_transcript: Optional[str] = None
 
 class EmergencyResponse(BaseModel):
     status: Literal['emergency']

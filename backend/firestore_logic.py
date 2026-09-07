@@ -45,10 +45,10 @@ def get_session(session_id: str) -> Optional[Dict[str, Any]]:
         logger.error(f"Error fetching session {session_id} from Firestore: {e}", exc_info=True)
         return None
 
-def update_session(session_id: str, uid: str, slot_fields: dict, turn_count: int, triage_result: Optional[dict] = None) -> bool:
+def update_session(session_id: str, uid: str, session_state: dict, turn_count: int, conversation_history: list, triage_result: Optional[dict] = None) -> bool:
     """
     Persists or updates the session document in Firestore.
-    Document schema matches: {uid, slot_fields, turn_count, triage_result, timestamp}
+    Document schema matches: {uid, session_state, turn_count, conversation_history, triage_result, timestamp}
     """
     if db is None:
         logger.warning("Firestore is not initialized. update_session skipping.")
@@ -60,8 +60,9 @@ def update_session(session_id: str, uid: str, slot_fields: dict, turn_count: int
         # Build Firestore update payload
         payload = {
             "uid": uid,
-            "slot_fields": slot_fields,
+            "session_state": session_state,
             "turn_count": turn_count,
+            "conversation_history": conversation_history,
             "triage_result": triage_result,
             "timestamp": firestore.SERVER_TIMESTAMP
         }
@@ -72,3 +73,5 @@ def update_session(session_id: str, uid: str, slot_fields: dict, turn_count: int
     except Exception as e:
         logger.error(f"Error updating session {session_id} in Firestore: {e}", exc_info=True)
         return False
+
+

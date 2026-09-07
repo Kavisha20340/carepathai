@@ -184,7 +184,7 @@ export const useStore = create((set, get) => ({
       const formData = new FormData()
       formData.append('file', audioBlob, 'audio.webm')
 
-      const response = await axios.post(`${API_BASE_URL}/transcribe?language=${get().language}`, formData, {
+      const response = await axios.post(`${API_BASE_URL}/transcribe?language=${get().language}&session_id=${requestSessionId}`, formData, {
         headers: {
           ...getHeaders(),
           'Content-Type': 'multipart/form-data',
@@ -260,28 +260,51 @@ export const useStore = create((set, get) => ({
       }
 
       if (data.status === 'follow_up') {
-        set((state) => ({
-          sessionState: data.updated_session_state,
-          conversationHistory: [
-            ...state.conversationHistory,
-            { role: 'assistant', text: data.follow_up_question, timestamp: Date.now() }
-          ],
-          isLoading: false
-        }))
+        set((state) => {
+          const history = state.conversationHistory.map((item) => ({ ...item }));
+          if (data.denoised_transcript) {
+            for (let i = history.length - 1; i >= 0; i--) {
+              if (history[i].role === 'user') {
+                history[i].text = data.denoised_transcript;
+                break;
+              }
+            }
+          }
+          return {
+            sessionState: data.updated_session_state,
+            conversationHistory: [
+              ...history,
+              { role: 'assistant', text: data.follow_up_question, timestamp: Date.now() }
+            ],
+            isLoading: false
+          };
+        })
       } else if (data.status === 'triage_complete') {
         const currentLang = get().language || 'en';
-        set((state) => ({
-          sessionState: data.updated_session_state,
-          triageResult: data.triage_result,
-          triageResultCache: {
-            ...state.triageResultCache,
-            [currentLang]: {
-              triageResult: data.triage_result,
-              sessionState: data.updated_session_state
+        set((state) => {
+          const history = state.conversationHistory.map((item) => ({ ...item }));
+          if (data.denoised_transcript) {
+            for (let i = history.length - 1; i >= 0; i--) {
+              if (history[i].role === 'user') {
+                history[i].text = data.denoised_transcript;
+                break;
+              }
             }
-          },
-          isLoading: false
-        }));
+          }
+          return {
+            sessionState: data.updated_session_state,
+            conversationHistory: history,
+            triageResult: data.triage_result,
+            triageResultCache: {
+              ...state.triageResultCache,
+              [currentLang]: {
+                triageResult: data.triage_result,
+                sessionState: data.updated_session_state
+              }
+            },
+            isLoading: false
+          };
+        });
       }
     } catch (err) {
       if (requestSessionId !== get().sessionId) return;

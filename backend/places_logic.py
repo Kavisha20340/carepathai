@@ -67,7 +67,7 @@ def search_nearby_doctors(request: DoctorSearchRequest) -> List[Doctor]:
     radius_meters = int(request.radius_km * 1000)
     user_location = (request.lat, request.lng)
     
-    logger.info(f"Querying Google Places for: '{query_keyword}' at location: {user_location} within {request.radius_km} km (Rating bounds: {request.min_rating} - {request.max_rating})")
+    logger.info(f"===> [OUTGOING API CALL: Google Places Nearby Search] Keyword: '{query_keyword}' | Location: {user_location} | Radius: {request.radius_km} km | Rating Bounds: [{request.min_rating}-{request.max_rating}]")
     
     try:
         # Perform Nearby Search
@@ -79,7 +79,7 @@ def search_nearby_doctors(request: DoctorSearchRequest) -> List[Doctor]:
         )
         
         raw_results = places_result.get("results", [])
-        logger.info(f"Google Places returned {len(raw_results)} total raw results.")
+        logger.info(f"<=== [INCOMING API RESPONSE: Google Places Nearby Search] Raw Places Count: {len(raw_results)}")
         
         # Collect and pre-filter candidates near the coordinates
         candidates = []
