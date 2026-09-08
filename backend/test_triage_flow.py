@@ -283,3 +283,63 @@ def test_translate_results_endpoint(mock_async_translate_text):
     response_missing = client.post("/translate-results?session_id=missing_session&language=hi")
     assert response_missing.status_code == 404
 
+
+@patch('backend.reasoning_logic.query_medgemma')
+@patch('backend.main.async_translate_text')
+def test_triage_complete_hindi_scenario(mock_async_translate_text, mock_query_medgemma):
+    print_separator("Triage Complete Hindi Scenario")
+    clear_mock_db()
+
+    mock_query_medgemma.return_value = {
+        "urgency": {"level": "routine", "justification": ""},
+        "conversation_status": {"is_complete": True, "next_question_to_user": None, "confidence_score": "high"},
+        "final_summary": {
+            "chief_complaint": "Vomiting and abdominal cramping",
+            "body_location": "Stomach",
+            "onset": "This morning",
+            "duration": "Ongoing",
+            "severity": "Not specified",
+            "associated_symptoms": ["Vomiting", "Abdominal cramping"],
+            "specialty_recommendation": "General Physician",
+            "clinical_reasoning": "Gastrointestinal symptoms warrant a general physician evaluation."
+        }
+    }
+
+    # Define mock translation behavior: append target language
+    async def side_effect_translate(text, target_language="hi"):
+        return f"{text} [translated: {target_language}]"
+    mock_async_translate_text.side_effect = side_effect_translate
+
+    payload = {
+        "transcript": "मुझे आज सुबह से तीन बार उल्टी हो चुकी है",
+        "session_id": "hindi_complete_session",
+        "turn_count": 3,
+        "max_turns": 3,
+        "language": "hi"
+    }
+
+    response = client.post("/triage", json=payload)
+    print(f"Status Code (HI-Triage): {response.status_code}")
+    print(f"Response (HI-Triage): {json.dumps(response.json(), indent=2)}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "triage_complete"
+
+    # 1. Assert response is fully translated to Hindi
+    assert data["triage_result"]["reasoning_summary"] == "Gastrointestinal symptoms warrant a general physician evaluation. [translated: hi]"
+    assert data["updated_session_state"]["chief_complaint"] == "Vomiting and abdominal cramping [translated: hi]"
+    assert data["updated_session_state"]["body_location"] == "Stomach [translated: hi]"
+    assert "Vomiting [translated: hi]" in data["updated_session_state"]["associated_symptoms"]
+    assert "Abdominal cramping [translated: hi]" in data["updated_session_state"]["associated_symptoms"]
+
+    # 2. Assert Firestore record remains in clean English
+    saved_session = MOCK_FIRESTORE_DB.get("hindi_complete_session")
+    assert saved_session is not None
+    assert saved_session["session_state"]["chief_complaint"] == "Vomiting and abdominal cramping"
+    assert saved_session["session_state"]["body_location"] == "Stomach"
+    assert "Vomiting" in saved_session["session_state"]["associated_symptoms"]
+    assert "Abdominal cramping" in saved_session["session_state"]["associated_symptoms"]
+    assert saved_session["triage_result"]["final_summary"]["clinical_reasoning"] == "Gastrointestinal symptoms warrant a general physician evaluation."
+
+

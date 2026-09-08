@@ -71,8 +71,109 @@ def _map_confidence_to_literal(score) -> str:
             return 'low'
     return 'low'
 
+
+async def translate_triage_data(
+    triage_result: TriageResult, 
+    session_state: SessionState, 
+    target_language: str
+) -> tuple[TriageResult, SessionState]:
+    """
+    Translates triage results and session state fields concurrently to the target language.
+    If target_language is 'en', returns original English models directly.
+    """
+    if target_language == 'en':
+        return triage_result, session_state
+
+    to_translate = {}
+
+    # A. Dynamic reasoning summary
+    if triage_result.reasoning_summary:
+        to_translate['reasoning_summary'] = triage_result.reasoning_summary
+
+    # B. SessionState fields
+    if session_state.chief_complaint:
+        to_translate['chief_complaint'] = session_state.chief_complaint
+    if session_state.body_location:
+        to_translate['body_location'] = session_state.body_location
+    if session_state.onset:
+        to_translate['onset'] = session_state.onset
+    if session_state.duration:
+        to_translate['duration'] = session_state.duration
+    if session_state.severity and isinstance(session_state.severity, str):
+        to_translate['severity'] = session_state.severity
+    if session_state.aggravating_factors:
+        to_translate['aggravating_factors'] = session_state.aggravating_factors
+    if session_state.relevant_history:
+        to_translate['relevant_history'] = session_state.relevant_history
+
+    # C. Lists
+    for i, symptom in enumerate(session_state.associated_symptoms):
+        if symptom and isinstance(symptom, str):
+            to_translate[f'symptom_{i}'] = symptom
+
+    for i, flag in enumerate(session_state.red_flags_present):
+        if flag and isinstance(flag, str):
+            to_translate[f'red_flag_present_{i}'] = flag
+
+    for i, flag in enumerate(triage_result.red_flags_triggered):
+        if flag and isinstance(flag, str):
+            to_translate[f'red_flag_triggered_{i}'] = flag
+
+    if not to_translate:
+        return triage_result, session_state
+
+    # Translate concurrently
+    keys = list(to_translate.keys())
+    original_texts = [to_translate[k] for k in keys]
+
+    logger.info(f"Translating {len(original_texts)} fields concurrently to '{target_language}'...")
+    translated_texts = await asyncio.gather(*[
+        async_translate_text(text, target_language=target_language)
+        for text in original_texts
+    ])
+    translated_map = dict(zip(keys, translated_texts))
+
+    # Reassemble objects
+    if 'reasoning_summary' in translated_map:
+        triage_result.reasoning_summary = translated_map['reasoning_summary']
+    if 'chief_complaint' in translated_map:
+        session_state.chief_complaint = translated_map['chief_complaint']
+    if 'body_location' in translated_map:
+        session_state.body_location = translated_map['body_location']
+    if 'onset' in translated_map:
+        session_state.onset = translated_map['onset']
+    if 'duration' in translated_map:
+        session_state.duration = translated_map['duration']
+    if 'severity' in translated_map:
+        session_state.severity = translated_map['severity']
+    if 'aggravating_factors' in translated_map:
+        session_state.aggravating_factors = translated_map['aggravating_factors']
+    if 'relevant_history' in translated_map:
+        session_state.relevant_history = translated_map['relevant_history']
+
+    translated_symptoms = []
+    for i in range(len(session_state.associated_symptoms)):
+        key = f'symptom_{i}'
+        translated_symptoms.append(translated_map.get(key, session_state.associated_symptoms[i]))
+    session_state.associated_symptoms = translated_symptoms
+
+    translated_red_flags_present = []
+    for i in range(len(session_state.red_flags_present)):
+        key = f'red_flag_present_{i}'
+        translated_red_flags_present.append(translated_map.get(key, session_state.red_flags_present[i]))
+    session_state.red_flags_present = translated_red_flags_present
+
+    translated_red_flags_triggered = []
+    for i in range(len(triage_result.red_flags_triggered)):
+        key = f'red_flag_triggered_{i}'
+        translated_red_flags_triggered.append(translated_map.get(key, triage_result.red_flags_triggered[i]))
+    triage_result.red_flags_triggered = translated_red_flags_triggered
+
+    return triage_result, session_state
+
+
 @app.post("/triage", response_model=Union[FollowUpResponse, TriageCompleteResponse, EmergencyResponse])
-def triage(request: TriageRequest, background_tasks: BackgroundTasks, uid: str = Depends(verify_id_token)):
+async def triage(request: TriageRequest, background_tasks: BackgroundTasks, uid: str = Depends(verify_id_token)):
     """
     Main stateful symptom-intake triage loop, powered by the MedGemma Clinical Reasoning Engine.
     Orchestrates the "Translate -> Reason -> Translate" workflow.
@@ -193,22 +294,25 @@ def triage(request: TriageRequest, background_tasks: BackgroundTasks, uid: str =
                 red_flags_triggered=[]
             )
             
-            if request.language == 'hi':
-                if summary.get('chief_complaint'):
-                    summary['chief_complaint'] = translate_text(summary.get('chief_complaint', ''), 'hi')
-                if triage_result.reasoning_summary:
-                    triage_result.reasoning_summary = translate_text(triage_result.reasoning_summary, 'hi')
+            # Reconstruct English structures
+            session_state_model = SessionState(**session_state)
 
+            # Save clean English structures to Firestore background task
             background_tasks.add_task(
                 update_session,
                 session_id=request.session_id, uid=uid, session_state=session_state,
                 turn_count=request.turn_count, conversation_history=conversation_history,
                 triage_result=medgemma_response
             )
+
+            # Translate response data to requested language
+            triage_result, session_state_model = await translate_triage_data(
+                triage_result, session_state_model, request.language or 'en'
+            )
             
             response_obj = TriageCompleteResponse(
                 status='triage_complete',
-                updated_session_state=session_state,
+                updated_session_state=session_state_model,
                 triage_result=triage_result,
                 urgency_warning=urgency_warning_message,
                 denoised_transcript=clean_transcript
@@ -309,108 +413,10 @@ async def translate_results(
         red_flags_triggered=[]
     )
 
-    # If the target language is English, we don't need any translations
-    if language == 'en':
-        logger.info(f"<=== [APP RESPONSE: /translate-results] Target language is 'en', returning original English results.")
-        return TranslateResultsResponse(
-            triage_result=triage_result,
-            updated_session_state=session_state
-        )
-
-    # 3. Gather fields that need translation
-    to_translate = {}
-
-    if triage_result.reasoning_summary:
-        to_translate['reasoning_summary'] = triage_result.reasoning_summary
-
-    if session_state.chief_complaint:
-        to_translate['chief_complaint'] = session_state.chief_complaint
-    if session_state.body_location:
-        to_translate['body_location'] = session_state.body_location
-    if session_state.onset:
-        to_translate['onset'] = session_state.onset
-    if session_state.duration:
-        to_translate['duration'] = session_state.duration
-    if session_state.severity and isinstance(session_state.severity, str):
-        to_translate['severity'] = session_state.severity
-    if session_state.aggravating_factors:
-        to_translate['aggravating_factors'] = session_state.aggravating_factors
-    if session_state.relevant_history:
-        to_translate['relevant_history'] = session_state.relevant_history
-
-    # Handle associated symptoms list
-    for i, symptom in enumerate(session_state.associated_symptoms):
-        if symptom and isinstance(symptom, str):
-            to_translate[f'symptom_{i}'] = symptom
-
-    # Handle red flags present list
-    for i, flag in enumerate(session_state.red_flags_present):
-        if flag and isinstance(flag, str):
-            to_translate[f'red_flag_present_{i}'] = flag
-
-    # Handle red flags triggered list
-    for i, flag in enumerate(triage_result.red_flags_triggered):
-        if flag and isinstance(flag, str):
-            to_translate[f'red_flag_triggered_{i}'] = flag
-
-    # 4. Perform parallel translation if there are fields to translate
-    if to_translate:
-        keys = list(to_translate.keys())
-        original_texts = [to_translate[k] for k in keys]
-
-        logger.info(f"Translating {len(original_texts)} fields concurrently to '{language}'...")
-        translated_texts = await asyncio.gather(*[
-            async_translate_text(text, target_language=language)
-            for text in original_texts
-        ])
-        translated_map = dict(zip(keys, translated_texts))
-
-        # 5. Reassemble the translated values back to the objects
-        if 'reasoning_summary' in translated_map:
-            triage_result.reasoning_summary = translated_map['reasoning_summary']
-
-        if 'chief_complaint' in translated_map:
-            session_state.chief_complaint = translated_map['chief_complaint']
-        if 'body_location' in translated_map:
-            session_state.body_location = translated_map['body_location']
-        if 'onset' in translated_map:
-            session_state.onset = translated_map['onset']
-        if 'duration' in translated_map:
-            session_state.duration = translated_map['duration']
-        if 'severity' in translated_map:
-            session_state.severity = translated_map['severity']
-        if 'aggravating_factors' in translated_map:
-            session_state.aggravating_factors = translated_map['aggravating_factors']
-        if 'relevant_history' in translated_map:
-            session_state.relevant_history = translated_map['relevant_history']
-
-        # Re-populate list fields
-        translated_symptoms = []
-        for i in range(len(session_state.associated_symptoms)):
-            key = f'symptom_{i}'
-            if key in translated_map:
-                translated_symptoms.append(translated_map[key])
-            else:
-                translated_symptoms.append(session_state.associated_symptoms[i])
-        session_state.associated_symptoms = translated_symptoms
-
-        translated_red_flags_present = []
-        for i in range(len(session_state.red_flags_present)):
-            key = f'red_flag_present_{i}'
-            if key in translated_map:
-                translated_red_flags_present.append(translated_map[key])
-            else:
-                translated_red_flags_present.append(session_state.red_flags_present[i])
-        session_state.red_flags_present = translated_red_flags_present
-
-        translated_red_flags_triggered = []
-        for i in range(len(triage_result.red_flags_triggered)):
-            key = f'red_flag_triggered_{i}'
-            if key in translated_map:
-                translated_red_flags_triggered.append(translated_map[key])
-            else:
-                translated_red_flags_triggered.append(triage_result.red_flags_triggered[i])
-        triage_result.red_flags_triggered = translated_red_flags_triggered
+    # 3. Translate response data to target language concurrently using helper
+    triage_result, session_state = await translate_triage_data(
+        triage_result, session_state, language
+    )
 
     logger.info(f"<=== [APP RESPONSE: /translate-results] Successfully translated results for session {session_id}")
     return TranslateResultsResponse(
