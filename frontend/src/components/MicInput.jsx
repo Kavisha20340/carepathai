@@ -58,12 +58,16 @@ export default function MicInput() {
         if (blob.size > 0) {
           try {
             const txt = await transcribeAudio(blob)
+            setRecordState('idle')
             if (txt) await submitTriageTurn(txt)
-          } catch (e) { console.error(e) }
+          } catch (e) { 
+            console.error(e) 
+            setRecordState('idle')
+          }
         } else {
           setError("No audio captured.")
+          setRecordState('idle')
         }
-        setRecordState('idle')
         setIsRecording(false)
       }
       mediaRecorder.start(250)
