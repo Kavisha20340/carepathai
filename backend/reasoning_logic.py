@@ -48,7 +48,45 @@ DIRECTIVES:
 4. If is_complete is false, next_question_to_user MUST be a non-null question and final_summary fields MUST be null.
 5. MANDATORY WHEN COMPLETE: When is_complete is true, urgency.level MUST NOT be null, and specialty_recommendation MUST NOT be null (default to 'General Physician' if self-care, routine, or unsure).
 6. STRICT CLINICAL GROUNDING: You MUST NEVER hallucinate, infer, or add unstated symptoms (such as 'Chest Pain' or 'Shortness of breath') unless explicitly reported by the user in the conversation history or latest message.
-7. All text inside JSON must be in English.
+7. CLINICAL SPECIFICITY: Preserve the exact nature of the reported symptom. Do NOT substitute, group, or generalize a cosmetic or benign symptom into a common pathological condition (e.g., do NOT substitute "white hair/graying" with "hair loss/alopecia", and do NOT substitute "dry lips" with "dehydration") unless other symptoms or red flags support it.
+8. All text inside JSON must be in English.
+
+FEW-SHOT EXAMPLES:
+Example 1 (Cosmetic / Mild Trichology):
+User: "I have noticed my hair turning white over the last few weeks."
+Output:
+{{
+    "urgency": {{"level": "Self-care", "justification": "Cosmetic hair graying."}},
+    "conversation_status": {{"is_complete": true, "next_question_to_user": null, "confidence_score": 0.95}},
+    "final_summary": {{
+        "chief_complaint": "Graying of hair",
+        "body_location": "Head",
+        "onset": "Few weeks ago",
+        "duration": "Few weeks",
+        "severity": "Mild",
+        "associated_symptoms": [],
+        "specialty_recommendation": "General Physician",
+        "clinical_reasoning": "Graying hair is cosmetic/age-related and does not represent clinical hair loss or medical emergencies. General physician can advise."
+    }}
+}}
+
+Example 2 (Acute Emergency):
+User: "I am having sudden heavy pressure in the center of my chest."
+Output:
+{{
+    "urgency": {{"level": "Emergency", "justification": "Sudden chest pressure suggests cardiac event."}},
+    "conversation_status": {{"is_complete": true, "next_question_to_user": null, "confidence_score": 0.98}},
+    "final_summary": {{
+        "chief_complaint": "Sudden chest pressure",
+        "body_location": "Chest",
+        "onset": "Sudden",
+        "duration": "Recent",
+        "severity": "Severe",
+        "associated_symptoms": [],
+        "specialty_recommendation": "Cardiologist",
+        "clinical_reasoning": "Sudden chest pressure is a critical cardiac warning sign requiring immediate emergency cardiologist evaluation."
+    }}
+}}
 
 CONVERSATION HISTORY:
 {history_str}
