@@ -5,14 +5,18 @@ from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Backgroun
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Union, Optional
 import logging
+import asyncio
 
 # Import the new and existing models and logic
 from backend.models import (
     TriageRequest, FollowUpResponse, TriageCompleteResponse, 
-    EmergencyResponse, DoctorSearchRequest, DoctorSearchResponse, TriageResult, SessionState
+    EmergencyResponse, DoctorSearchRequest, DoctorSearchResponse, TriageResult, SessionState,
+    TranslateResultsResponse
 )
 from backend.reasoning_logic import run_clinical_reasoning_turn
-from backend.translation_logic import translate_text, transcribe_audio, denoise_transcript_with_context
+from backend.translation_logic import (
+    translate_text, transcribe_audio, denoise_transcript_with_context, async_translate_text
+)
 from backend.places_logic import search_nearby_doctors
 from backend.auth_logic import verify_id_token
 from backend.firestore_logic import get_session, update_session
@@ -265,3 +269,152 @@ def transcribe(file: UploadFile = File(...), language: str = "en", session_id: O
         logger.error(f"Error during transcription: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="An internal server error occurred during transcription.")
     
+
+
+@app.post("/translate-results", response_model=TranslateResultsResponse)
+async def translate_results(
+    session_id: str,
+    language: str,
+    uid: str = Depends(verify_id_token)
+):
+    """
+    Translates the triage results and updated session state from English to the target language (e.g. Hindi),
+    with parallel async gathering and Firestore caching.
+    """
+    logger.info(f"===> [APP REQUEST: /translate-results] Session: {session_id} | Target Lang: {language}")
+
+    # 1. Fetch session from Firestore
+    session_doc = get_session(session_id)
+    if not session_doc:
+        logger.warning(f"Session {session_id} not found in Firestore for translation.")
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    # 2. Extract and reconstruct original English models
+    raw_session_state = session_doc.get("session_state", {})
+    medgemma_response = session_doc.get("triage_result") or {}
+
+    # Extract the necessary values
+    summary = medgemma_response.get('final_summary', {}) or {}
+    raw_specialty = summary.get('specialty_recommendation')
+    clinical_reasoning = summary.get('clinical_reasoning') or 'Evaluation complete.'
+    urgency_level = medgemma_response.get('urgency', {}).get('level', '').lower()
+
+    # Reconstruct English structures
+    session_state = SessionState(**raw_session_state)
+    triage_result = TriageResult(
+        urgency_level=urgency_level if urgency_level in ['emergency', 'urgent', 'routine', 'self_care'] else 'routine',
+        specialist_type=_sanitize_specialist_type(raw_specialty),
+        confidence=_map_confidence_to_literal(medgemma_response.get('conversation_status', {}).get('confidence_score')),
+        reasoning_summary=clinical_reasoning,
+        red_flags_triggered=[]
+    )
+
+    # If the target language is English, we don't need any translations
+    if language == 'en':
+        logger.info(f"<=== [APP RESPONSE: /translate-results] Target language is 'en', returning original English results.")
+        return TranslateResultsResponse(
+            triage_result=triage_result,
+            updated_session_state=session_state
+        )
+
+    # 3. Gather fields that need translation
+    to_translate = {}
+
+    if triage_result.reasoning_summary:
+        to_translate['reasoning_summary'] = triage_result.reasoning_summary
+
+    if session_state.chief_complaint:
+        to_translate['chief_complaint'] = session_state.chief_complaint
+    if session_state.body_location:
+        to_translate['body_location'] = session_state.body_location
+    if session_state.onset:
+        to_translate['onset'] = session_state.onset
+    if session_state.duration:
+        to_translate['duration'] = session_state.duration
+    if session_state.severity and isinstance(session_state.severity, str):
+        to_translate['severity'] = session_state.severity
+    if session_state.aggravating_factors:
+        to_translate['aggravating_factors'] = session_state.aggravating_factors
+    if session_state.relevant_history:
+        to_translate['relevant_history'] = session_state.relevant_history
+
+    # Handle associated symptoms list
+    for i, symptom in enumerate(session_state.associated_symptoms):
+        if symptom and isinstance(symptom, str):
+            to_translate[f'symptom_{i}'] = symptom
+
+    # Handle red flags present list
+    for i, flag in enumerate(session_state.red_flags_present):
+        if flag and isinstance(flag, str):
+            to_translate[f'red_flag_present_{i}'] = flag
+
+    # Handle red flags triggered list
+    for i, flag in enumerate(triage_result.red_flags_triggered):
+        if flag and isinstance(flag, str):
+            to_translate[f'red_flag_triggered_{i}'] = flag
+
+    # 4. Perform parallel translation if there are fields to translate
+    if to_translate:
+        keys = list(to_translate.keys())
+        original_texts = [to_translate[k] for k in keys]
+
+        logger.info(f"Translating {len(original_texts)} fields concurrently to '{language}'...")
+        translated_texts = await asyncio.gather(*[
+            async_translate_text(text, target_language=language)
+            for text in original_texts
+        ])
+        translated_map = dict(zip(keys, translated_texts))
+
+        # 5. Reassemble the translated values back to the objects
+        if 'reasoning_summary' in translated_map:
+            triage_result.reasoning_summary = translated_map['reasoning_summary']
+
+        if 'chief_complaint' in translated_map:
+            session_state.chief_complaint = translated_map['chief_complaint']
+        if 'body_location' in translated_map:
+            session_state.body_location = translated_map['body_location']
+        if 'onset' in translated_map:
+            session_state.onset = translated_map['onset']
+        if 'duration' in translated_map:
+            session_state.duration = translated_map['duration']
+        if 'severity' in translated_map:
+            session_state.severity = translated_map['severity']
+        if 'aggravating_factors' in translated_map:
+            session_state.aggravating_factors = translated_map['aggravating_factors']
+        if 'relevant_history' in translated_map:
+            session_state.relevant_history = translated_map['relevant_history']
+
+        # Re-populate list fields
+        translated_symptoms = []
+        for i in range(len(session_state.associated_symptoms)):
+            key = f'symptom_{i}'
+            if key in translated_map:
+                translated_symptoms.append(translated_map[key])
+            else:
+                translated_symptoms.append(session_state.associated_symptoms[i])
+        session_state.associated_symptoms = translated_symptoms
+
+        translated_red_flags_present = []
+        for i in range(len(session_state.red_flags_present)):
+            key = f'red_flag_present_{i}'
+            if key in translated_map:
+                translated_red_flags_present.append(translated_map[key])
+            else:
+                translated_red_flags_present.append(session_state.red_flags_present[i])
+        session_state.red_flags_present = translated_red_flags_present
+
+        translated_red_flags_triggered = []
+        for i in range(len(triage_result.red_flags_triggered)):
+            key = f'red_flag_triggered_{i}'
+            if key in translated_map:
+                translated_red_flags_triggered.append(translated_map[key])
+            else:
+                translated_red_flags_triggered.append(triage_result.red_flags_triggered[i])
+        triage_result.red_flags_triggered = translated_red_flags_triggered
+
+    logger.info(f"<=== [APP RESPONSE: /translate-results] Successfully translated results for session {session_id}")
+    return TranslateResultsResponse(
+        triage_result=triage_result,
+        updated_session_state=session_state
+    )
+

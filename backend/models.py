@@ -76,3 +76,8 @@ class DoctorSearchResponse(BaseModel):
     status: str = "success"
     doctors: List[Doctor]
 
+
+class TranslateResultsResponse(BaseModel):
+    triage_result: TriageResult
+    updated_session_state: SessionState
+

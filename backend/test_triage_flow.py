@@ -211,3 +211,75 @@ def test_null_specialty_recommendation_handling(mock_query_medgemma):
     data = response.json()
     assert data["status"] == "triage_complete"
     assert data["triage_result"]["specialist_type"] == "general_physician"
+
+
+@patch('backend.main.async_translate_text')
+def test_translate_results_endpoint(mock_async_translate_text):
+    print_separator("Translate Results Endpoint")
+    clear_mock_db()
+
+    # Define mock translation behavior: append suffix showing target language
+    async def side_effect_translate(text, target_language="hi"):
+        return f"{text} [translated: {target_language}]"
+    
+    mock_async_translate_text.side_effect = side_effect_translate
+
+    # Set up mock session in memory DB
+    session_id = "test_trans_session"
+    MOCK_FIRESTORE_DB[session_id] = {
+        "uid": "test_user_123",
+        "turn_count": 3,
+        "conversation_history": [],
+        "session_state": {
+            "chief_complaint": "Knee pain after a fall",
+            "body_location": "Knee",
+            "onset": "After a fall",
+            "duration": "Mild",
+            "severity": "Mild",
+            "associated_symptoms": ["Pain", "Swelling"],
+            "aggravating_factors": None
+        },
+        "triage_result": {
+            "urgency": {"level": "routine"},
+            "conversation_status": {"confidence_score": "high"},
+            "final_summary": {
+                "specialty_recommendation": "orthopedic",
+                "clinical_reasoning": "The patient fell and has knee pain."
+            }
+        }
+    }
+
+    # Test 1: Toggle to Hindi (Cache Miss -> Calls Translation)
+    response = client.post(f"/translate-results?session_id={session_id}&language=hi")
+    print(f"Status Code (HI): {response.status_code}")
+    print(f"Response (HI): {json.dumps(response.json(), indent=2)}")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "triage_result" in data
+    assert "updated_session_state" in data
+
+    # Verify translated fields
+    assert data["triage_result"]["reasoning_summary"] == "The patient fell and has knee pain. [translated: hi]"
+    assert data["updated_session_state"]["chief_complaint"] == "Knee pain after a fall [translated: hi]"
+    assert data["updated_session_state"]["body_location"] == "Knee [translated: hi]"
+    assert "Pain [translated: hi]" in data["updated_session_state"]["associated_symptoms"]
+    assert "Swelling [translated: hi]" in data["updated_session_state"]["associated_symptoms"]
+
+    # Test 2: Toggle to English (Short-circuits, returns original)
+    response_en = client.post(f"/translate-results?session_id={session_id}&language=en")
+    print(f"Status Code (EN): {response_en.status_code}")
+    print(f"Response (EN): {json.dumps(response_en.json(), indent=2)}")
+
+    assert response_en.status_code == 200
+    data_en = response_en.json()
+    assert data_en["triage_result"]["reasoning_summary"] == "The patient fell and has knee pain."
+    assert data_en["updated_session_state"]["chief_complaint"] == "Knee pain after a fall"
+    assert data_en["updated_session_state"]["body_location"] == "Knee"
+    assert "Pain" in data_en["updated_session_state"]["associated_symptoms"]
+    assert "Swelling" in data_en["updated_session_state"]["associated_symptoms"]
+
+    # Test 3: Session Not Found Handling
+    response_missing = client.post("/translate-results?session_id=missing_session&language=hi")
+    assert response_missing.status_code == 404
+
