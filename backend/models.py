@@ -26,7 +26,9 @@ class TriageResult(BaseModel):
     specialist_type: Literal[
         'general_physician', 'orthopedic', 'dermatologist', 'pulmonologist',
         'cardiologist', 'gastroenterologist', 'ent', 'gynecologist',
-        'pediatrician', 'ophthalmologist', 'psychiatrist'
+        'pediatrician', 'ophthalmologist', 'psychiatrist', 'neurologist',
+        'urologist', 'dentist', 'endocrinologist', 'nephrologist',
+        'oncologist', 'rheumatologist', 'general_surgeon'
     ]
     confidence: Literal['high', 'moderate', 'low']
     red_flags_triggered: List[str] = []
@@ -54,7 +56,9 @@ class DoctorSearchRequest(BaseModel):
     specialist_type: Literal[
         'general_physician', 'orthopedic', 'dermatologist', 'pulmonologist',
         'cardiologist', 'gastroenterologist', 'ent', 'gynecologist',
-        'pediatrician', 'ophthalmologist', 'psychiatrist'
+        'pediatrician', 'ophthalmologist', 'psychiatrist', 'neurologist',
+        'urologist', 'dentist', 'endocrinologist', 'nephrologist',
+        'oncologist', 'rheumatologist', 'general_surgeon'
     ]
     lat: float
     lng: float

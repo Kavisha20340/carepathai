@@ -196,7 +196,15 @@ export const specialistTranslations = {
     gynecologist: "Gynecologist",
     pediatrician: "Pediatrician",
     ophthalmologist: "Ophthalmologist",
-    psychiatrist: "Psychiatrist"
+    psychiatrist: "Psychiatrist",
+    neurologist: "Neurologist",
+    urologist: "Urologist",
+    dentist: "Dentist",
+    endocrinologist: "Endocrinologist",
+    nephrologist: "Nephrologist",
+    oncologist: "Oncologist",
+    rheumatologist: "Rheumatologist",
+    general_surgeon: "General Surgeon"
   },
   hi: {
     general_physician: "सामान्य चिकित्सक",
@@ -209,7 +217,15 @@ export const specialistTranslations = {
     gynecologist: "स्त्री रोग विशेषज्ञ",
     pediatrician: "बाल रोग विशेषज्ञ",
     ophthalmologist: "नेत्र रोग विशेषज्ञ",
-    psychiatrist: "मनोचिकित्सक"
+    psychiatrist: "मनोचिकित्सक",
+    neurologist: "न्यूरोलॉजिस्ट / तंत्रिका रोग विशेषज्ञ",
+    urologist: "यूरोलॉजिस्ट / मूत्र रोग विशेषज्ञ",
+    dentist: "दंत चिकित्सक",
+    endocrinologist: "एंडोक्रिनोलॉजिस्ट / थाइरॉइड और मधुमेह विशेषज्ञ",
+    nephrologist: "नेफ्रोलॉजिस्ट / गुर्दा रोग विशेषज्ञ",
+    oncologist: "ऑन्कोलॉजिस्ट / कैंसर विशेषज्ञ",
+    rheumatologist: "रुमेटोलॉजिस्ट / गठिया रोग विशेषज्ञ",
+    general_surgeon: "सामान्य शल्य चिकित्सक"
   }
 };
 

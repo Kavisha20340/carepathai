@@ -38,17 +38,58 @@ app.add_middleware(
 ALLOWED_SPECIALISTS = {
     'general_physician', 'orthopedic', 'dermatologist', 'pulmonologist',
     'cardiologist', 'gastroenterologist', 'ent', 'gynecologist',
-    'pediatrician', 'ophthalmologist', 'psychiatrist'
+    'pediatrician', 'ophthalmologist', 'psychiatrist', 'neurologist',
+    'urologist', 'dentist', 'endocrinologist', 'nephrologist',
+    'oncologist', 'rheumatologist', 'general_surgeon'
 }
 
 def _sanitize_specialist_type(raw_specialty: Union[str, None]) -> str:
     if not raw_specialty or not isinstance(raw_specialty, str):
         return 'general_physician'
-    formatted = raw_specialty.strip().lower().replace(' ', '_')
+    formatted = raw_specialty.strip().lower().replace('-', '_').replace(' ', '_')
     if formatted in ALLOWED_SPECIALISTS:
         return formatted
+    
+    # Flexible keyword/synonym alias mapping
+    if any(kw in formatted for kw in ['derma', 'skin']):
+        return 'dermatologist'
+    if any(kw in formatted for kw in ['ortho', 'bone', 'joint']):
+        return 'orthopedic'
+    if any(kw in formatted for kw in ['cardio', 'heart']):
+        return 'cardiologist'
+    if any(kw in formatted for kw in ['pulm', 'lung', 'respirat']):
+        return 'pulmonologist'
+    if any(kw in formatted for kw in ['gastro', 'stomach', 'digest']):
+        return 'gastroenterologist'
+    if any(kw in formatted for kw in ['ear', 'nose', 'throat', 'ent']):
+        return 'ent'
+    if any(kw in formatted for kw in ['gyno', 'gynec', 'women']):
+        return 'gynecologist'
+    if any(kw in formatted for kw in ['pedia', 'child']):
+        return 'pediatrician'
+    if any(kw in formatted for kw in ['ophthal', 'eye', 'vision']):
+        return 'ophthalmologist'
+    if any(kw in formatted for kw in ['psych', 'mental']):
+        return 'psychiatrist'
+    if any(kw in formatted for kw in ['neuro', 'nerve', 'brain']):
+        return 'neurologist'
+    if any(kw in formatted for kw in ['uro', 'urinary', 'bladder']):
+        return 'urologist'
+    if any(kw in formatted for kw in ['dent', 'tooth', 'teeth', 'oral']):
+        return 'dentist'
+    if any(kw in formatted for kw in ['endo', 'diabet', 'thyroid']):
+        return 'endocrinologist'
+    if any(kw in formatted for kw in ['nephro', 'kidney']):
+        return 'nephrologist'
+    if any(kw in formatted for kw in ['onco', 'cancer', 'tumor']):
+        return 'oncologist'
+    if any(kw in formatted for kw in ['rheuma', 'arthrit']):
+        return 'rheumatologist'
+    if any(kw in formatted for kw in ['surg', 'operat']):
+        return 'general_surgeon'
     if any(kw in formatted for kw in ['physician', 'doctor', 'gp', 'general', 'primary']):
         return 'general_physician'
+        
     return 'general_physician'
 
 def _map_confidence_to_literal(score) -> str:
@@ -230,7 +271,7 @@ async def triage(request: TriageRequest, background_tasks: BackgroundTasks, uid:
                 logger.info(f"Updated session_state with: {update_data}")
 
         # Tiered urgency logic
-        urgency_level = medgemma_response.get('urgency', {}).get('level', '').lower()
+        urgency_level = medgemma_response.get('urgency', {}).get('level', '').replace('-', '_').lower()
         urgency_justification = medgemma_response.get('urgency', {}).get('justification', '')
         urgency_warning_message = None
 

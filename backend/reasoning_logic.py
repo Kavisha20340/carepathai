@@ -33,8 +33,8 @@ def construct_prompt(
             "duration": "Symptom duration or null if unknown.",
             "severity": "Reported severity or null if unknown.",
             "associated_symptoms": ["List of other mentioned symptoms"],
-            "specialty_recommendation": "Single appropriate specialty (e.g., 'Cardiologist', 'General Physician'). MUST default to 'General Physician' if unsure. MUST be null if is_complete is false.",
-            "clinical_reasoning": "Concise reasoning for recommendation (25 words max). MUST be null if is_complete is false."
+            "specialty_recommendation": "One of: 'General Physician', 'Orthopedic', 'Dermatologist', 'Pulmonologist', 'Cardiologist', 'Gastroenterologist', 'ENT Specialist', 'Gynecologist', 'Pediatrician', 'Ophthalmologist', 'Psychiatrist', 'Neurologist', 'Urologist', 'Dentist', 'Endocrinologist', 'Nephrologist', 'Oncologist', 'Rheumatologist', 'General Surgeon'. Identify appropriate specialist REGARDLESS of urgency level. MUST default to 'General Physician' if non-specific or unsure. MUST be null if is_complete is false.",
+            "clinical_reasoning": "Concise reasoning for recommendation (50 words max). MUST be null if is_complete is false."
         }
     }'''
 
@@ -46,9 +46,9 @@ DIRECTIVES:
 2. Be extremely concise in justifications.
 3. If symptoms & specialty are clear or turn_count == max_turns, set is_complete=true.
 4. If is_complete is false, next_question_to_user MUST be a non-null question and final_summary fields MUST be null.
-5. MANDATORY WHEN COMPLETE: When is_complete is true, urgency.level MUST NOT be null, and specialty_recommendation MUST NOT be null (default to 'General Physician' if self-care, routine, or unsure).
+5. MANDATORY WHEN COMPLETE: When is_complete is true, urgency.level MUST NOT be null, and specialty_recommendation MUST NOT be null. Determine specialty_recommendation purely by identifying the appropriate clinical specialist for the reported symptoms, REGARDLESS of the urgency level (e.g., recommend 'Dermatologist' for a skin rash even if urgency is 'Self-care'). Default to 'General Physician' only if non-specific or unsure.
 6. STRICT CLINICAL GROUNDING: You MUST NEVER hallucinate, infer, or add unstated symptoms (such as 'Chest Pain' or 'Shortness of breath') unless explicitly reported by the user in the conversation history or latest message.
-7. CLINICAL INTAKE PRINCIPLE: Base your triage and summary strictly on the exact symptoms reported. Do NOT substitute, group, or generalize reported symptoms with different diagnostic concepts, categories, or pathologies. For any gradual, chronic, or non-acute complaints, you MUST conduct a proper clinical inquiry by asking relevant clarifying questions (such as age, onset, or systemic factors) before concluding triage.
+7. CLINICAL INTAKE PRINCIPLE: Base your triage and summary strictly on the exact symptoms reported. Do NOT substitute, group, or generalize reported symptoms with different diagnostic concepts, categories, or pathologies. For any gradual, chronic, or non-acute complaints, you MUST conduct a proper clinical inquiry by asking relevant clarifying questions (such as age, onset, or systemic factors etc) before concluding triage.
 8. All text inside JSON must be in English.
 
 CONVERSATION HISTORY:
