@@ -81,3 +81,10 @@ class TranslateResultsResponse(BaseModel):
     triage_result: TriageResult
     updated_session_state: SessionState
 
+
+
+class SaveReportTraceRequest(BaseModel):
+    session_id: str
+    language: str
+    report_text: str
+

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { FaSync } from 'react-icons/fa';
+import { FaSync, FaDownload } from 'react-icons/fa';
 import { useStore } from './store/useStore';
 import LandingPage from './components/LandingPage';
 import MicInput from './components/MicInput';
@@ -10,9 +10,10 @@ import DoctorSearch from './components/DoctorSearch';
 import EmergencyOverlay from './components/EmergencyOverlay';
 import ErrorBoundary from './components/ErrorBoundary';
 import { translations } from './utils/translations';
+import { generateAndPrintReport } from './utils/reportGenerator';
 
 function AppContent() {
-  const { triageResult, sessionId, resetSession, turnCount, maxTurns, language, setLanguage } = useStore();
+  const { triageResult, sessionId, resetSession, turnCount, maxTurns, language, setLanguage, conversationHistory, sessionState, saveReportTrace } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -28,6 +29,19 @@ function AppContent() {
   const handleResetDemo = () => {
     resetSession(true);
     navigate('/');
+  };
+
+  const handleDownloadReport = () => {
+    generateAndPrintReport({
+      sessionId,
+      language,
+      conversationHistory,
+      triageResult,
+      sessionState,
+      onReportGenerated: (reportText) => {
+        saveReportTrace(reportText);
+      }
+    });
   };
 
   const isTriagePath = location.pathname === '/triage';
@@ -76,6 +90,17 @@ function AppContent() {
                     हिंदी
                   </button>
                 </div>
+              )}
+
+              {isTriagePath && triageResult && (
+                <button
+                  onClick={handleDownloadReport}
+                  className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 rounded-xl font-bold flex items-center gap-1.5 text-xs transition-all cursor-pointer"
+                  title={language === 'hi' ? 'रिपोर्ट डाउनलोड करें' : 'Download Report'}
+                >
+                  <FaDownload className="text-[10px]" />
+                  <span className="hidden sm:inline">{language === 'hi' ? 'रिपोर्ट' : 'Report'}</span>
+                </button>
               )}
 
               {isTriagePath && (

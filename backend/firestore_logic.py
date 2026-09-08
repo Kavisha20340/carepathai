@@ -75,3 +75,29 @@ def update_session(session_id: str, uid: str, session_state: dict, turn_count: i
         return False
 
 
+def save_report_trace(session_id: str, language: str, report_text: str) -> bool:
+    """
+    Appends a timestamped report download trace to the session's 'download_history' array in Firestore.
+    """
+    if db is None:
+        logger.warning("Firestore is not initialized. save_report_trace skipping.")
+        return False
+        
+    try:
+        from datetime import datetime, timezone
+        doc_ref = db.collection("sessions").document(session_id)
+        trace_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "language": language,
+            "report_text": report_text
+        }
+        doc_ref.set({
+            "download_history": firestore.ArrayUnion([trace_entry])
+        }, merge=True)
+        logger.info(f"Successfully saved report download trace for session ID: {session_id}")
+        return True
+    except Exception as e:
+        logger.error(f"Error saving report trace for session {session_id} in Firestore: {e}", exc_info=True)
+        return False
+
+

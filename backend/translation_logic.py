@@ -209,7 +209,7 @@ def transcribe_audio(audio_file, language: str = "en") -> dict:
 
     primary_lang = "hi-IN" if language == "hi" else "en-IN"
 
-    # Use "latest_long" for natural, un-warped acoustic dictation across BOTH languages.
+    # Use "latest_long" for full multi-sentence clinical dictation across BOTH languages.
     # We do NOT use alternative_language_codes to prevent the API from auto-switching
     # English speech into Devanagari script.
     config = speech.RecognitionConfig(
@@ -221,15 +221,21 @@ def transcribe_audio(audio_file, language: str = "en") -> dict:
     )
 
     logger.info(f"===> [OUTGOING API CALL: Google Speech-to-Text] Lang Code: '{primary_lang}' | Audio Size: {len(content)} bytes")
-    response = speech_client.recognize(config=config, audio=audio)
+    
+    try:
+        response = speech_client.recognize(config=config, audio=audio, timeout=30.0)
 
-    # Extract transcribed text
-    if response.results and response.results[0].alternatives:
-        transcript = response.results[0].alternatives[0].transcript.strip()
-    else:
-        transcript = ""
+        # Extract and join all transcribed sentence segments across the entire audio recording
+        transcripts = []
+        if response.results:
+            for result in response.results:
+                if result.alternatives:
+                    transcripts.append(result.alternatives[0].transcript.strip())
+        transcript = " ".join(transcripts).strip()
 
-    logger.info(f"<=== [INCOMING API RESPONSE: Google Speech-to-Text] Transcribed: '{transcript}'")
-
-    return {"transcript": transcript}
+        logger.info(f"<=== [INCOMING API RESPONSE: Google Speech-to-Text] Transcribed: '{transcript}'")
+        return {"transcript": transcript}
+    except Exception as stt_err:
+        logger.error(f"Google Speech-to-Text API timeout or error: {stt_err}")
+        return {"transcript": ""}
 

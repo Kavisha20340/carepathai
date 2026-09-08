@@ -11,7 +11,7 @@ import asyncio
 from backend.models import (
     TriageRequest, FollowUpResponse, TriageCompleteResponse, 
     EmergencyResponse, DoctorSearchRequest, DoctorSearchResponse, TriageResult, SessionState,
-    TranslateResultsResponse
+    TranslateResultsResponse, SaveReportTraceRequest
 )
 from backend.reasoning_logic import run_clinical_reasoning_turn
 from backend.translation_logic import (
@@ -19,7 +19,7 @@ from backend.translation_logic import (
 )
 from backend.places_logic import search_nearby_doctors
 from backend.auth_logic import verify_id_token
-from backend.firestore_logic import get_session, update_session
+from backend.firestore_logic import get_session, update_session, save_report_trace
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -423,4 +423,17 @@ async def translate_results(
         triage_result=triage_result,
         updated_session_state=session_state
     )
+
+
+
+@app.post("/save-report-trace")
+def save_report_trace_endpoint(request: SaveReportTraceRequest, uid: str = Depends(verify_id_token)):
+    """
+    Saves a report download trace (textual content, timestamp, language) to the session document in Firestore.
+    """
+    logger.info(f"===> [APP REQUEST: /save-report-trace] Session: {request.session_id} | Lang: {request.language}")
+    success = save_report_trace(request.session_id, request.language, request.report_text)
+    if not success:
+        logger.warning(f"Failed to save report trace for session {request.session_id}")
+    return {"status": "success" if success else "failed"}
 

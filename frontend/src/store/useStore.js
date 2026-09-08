@@ -171,6 +171,23 @@ export const useStore = create((set, get) => ({
       }
     }
   },
+  saveReportTrace: async (reportText) => {
+    const { sessionId, language } = get();
+    if (!sessionId || !reportText) return;
+    try {
+      await axios.post(`${API_BASE_URL}/save-report-trace`, {
+        session_id: sessionId,
+        language: language || 'en',
+        report_text: reportText
+      }, {
+        headers: getHeaders()
+      });
+      console.log("Report trace saved successfully in Firestore.");
+    } catch (err) {
+      console.error("Failed to save report trace:", err);
+    }
+  },
+
 
   setIsRecording: (isRecording) => set({ isRecording }),
   setError: (error) => set({ error }),
