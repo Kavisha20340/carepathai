@@ -216,7 +216,7 @@ export default function DoctorSearch() {
                 <div>
                   <h4 className="font-bold text-gray-800 dark:text-gray-100">{doc.name}</h4>
                   <span className="inline-block mt-1 text-[10px] text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full font-bold uppercase">
-                    {doc.specialty_tag}
+                    {sT[doc.specialty_tag.toLowerCase().replace(/\s+/g, '_')] || doc.specialty_tag}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-yellow-600 text-xs font-bold bg-yellow-50 px-2 py-1 rounded">
