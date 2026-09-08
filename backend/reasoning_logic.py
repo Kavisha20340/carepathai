@@ -33,6 +33,7 @@ def construct_prompt(
             "duration": "Symptom duration or null if unknown.",
             "severity": "Reported severity or null if unknown.",
             "associated_symptoms": ["List of other mentioned symptoms"],
+            "aggravating_factors": "Triggers or factors that worsen symptoms, or null if unknown.",
             "specialty_recommendation": "One of: 'General Physician', 'Orthopedic', 'Dermatologist', 'Pulmonologist', 'Cardiologist', 'Gastroenterologist', 'ENT Specialist', 'Gynecologist', 'Pediatrician', 'Ophthalmologist', 'Psychiatrist', 'Neurologist', 'Urologist', 'Dentist', 'Endocrinologist', 'Nephrologist', 'Oncologist', 'Rheumatologist', 'General Surgeon'. Identify appropriate specialist REGARDLESS of urgency level. MUST default to 'General Physician' if non-specific or unsure. MUST be null if is_complete is false.",
             "clinical_reasoning": "Concise reasoning for recommendation (50 words max). MUST be null if is_complete is false."
         }

@@ -81,7 +81,7 @@ export default function DoctorSearch() {
       const { min, max } = getMinMaxRating(ratingRange);
       searchDoctors(triageResult.specialist_type, coords.lat, coords.lng, finalRadius, min, max);
     }
-  }, [ratingRange, radiusInput, hasSearched, coords, triageResult, isCustomRadius]);
+  }, [ratingRange, radiusInput, hasSearched, coords, triageResult?.specialist_type, isCustomRadius]);
 
   if (!triageResult) return null;
 

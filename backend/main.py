@@ -300,7 +300,14 @@ async def triage(request: TriageRequest, background_tasks: BackgroundTasks, uid:
                 urgency_warning_message = translate_text(urgency_warning_message, 'hi')
 
         # 5. Decide whether to follow-up or complete the triage
-        if not medgemma_response.get('conversation_status', {}).get('is_complete'):
+        is_complete = medgemma_response.get('conversation_status', {}).get('is_complete', False)
+        
+        # HARD SAFETY GUARDRAIL: Force completion if turn_count >= max_turns
+        if request.turn_count >= request.max_turns:
+            logger.info(f"Max turns ({request.max_turns}) reached (Current turn: {request.turn_count}). Forcing triage completion.")
+            is_complete = True
+
+        if not is_complete:
             # Follow-up required
             question = medgemma_response.get('conversation_status', {}).get('next_question_to_user') or "Could you describe your symptoms further?"
             if request.language == 'hi':
@@ -327,6 +334,12 @@ async def triage(request: TriageRequest, background_tasks: BackgroundTasks, uid:
             raw_specialty = summary.get('specialty_recommendation')
             clinical_reasoning = summary.get('clinical_reasoning') or 'Evaluation complete.'
             
+            if not raw_specialty and session_state.get('chief_complaint'):
+                raw_specialty = 'general_physician'
+            if not clinical_reasoning or clinical_reasoning == 'Evaluation complete.':
+                if session_state.get('chief_complaint'):
+                    clinical_reasoning = f"Evaluation complete for reported complaint: {session_state.get('chief_complaint')}."
+
             triage_result = TriageResult(
                 urgency_level=urgency_level if urgency_level in ['emergency', 'urgent', 'routine', 'self_care'] else 'routine',
                 specialist_type=_sanitize_specialist_type(raw_specialty),
