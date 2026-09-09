@@ -16,16 +16,10 @@ const getIcon = (type) => {
 export default function EmergencyOverlay() {
   const { emergencyMessage, language, isLoading } = useStore();
 
-  // Lock body scroll while emergency overlay is displayed to eliminate double scrollbars
+  // Body scroll lock disabled: overlay no longer needs it since it has
+  // no independent scroll container of its own (single page scrollbar only).
   useEffect(() => {
-    if (emergencyMessage) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
+    document.body.style.overflow = '';
   }, [emergencyMessage]);
 
   if (!emergencyMessage) return null;
@@ -43,9 +37,9 @@ export default function EmergencyOverlay() {
   const secondaryNumbers = list.filter(n => !n.primary);
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-center pt-32 sm:pt-36 pb-8 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pointer-events-none animate-fadeIn">
-      <div className="w-full max-w-2xl px-4 sm:px-6 md:px-10 pointer-events-auto">
-        <div className="bg-red-600/90 dark:bg-red-950/90 backdrop-blur-md rounded-3xl p-3 sm:p-5 shadow-2xl border-2 border-red-500/80 text-center animate-scaleIn">
+     <div className="fixed inset-x-0 top-34 z-40 animate-fadeIn">
+      <div className="w-full max-w-2xl mx-auto bg-red-600/90 dark:bg-red-950/90 shadow-2xl border-b-2 border-red-500/80">
+        <div className="px-6 md:px-10 py-3 sm:py-5">
           <div className="bg-white dark:bg-gray-900 rounded-2xl px-3.5 sm:px-7 md:px-8 pb-3.5 sm:pb-4 md:pb-5 pt-5 shadow-inner border border-red-200 dark:border-red-900/50">
             {/* Title Header */}
             <div className="flex flex-col items-center justify-center mb-2">
