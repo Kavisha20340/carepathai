@@ -141,8 +141,8 @@ function AppContent() {
         </Routes>
       </main>
 
-      <footer className="py-3 bg-white/50 dark:bg-gray-950/20 text-center text-xs text-gray-400 font-medium">
-        <div className="mx-auto w-full max-w-2xl px-6 md:px-10 transition-all duration-300">
+      <footer className="py-4 text-center text-xs text-gray-400 dark:text-gray-500 font-medium">
+        <div className="mx-auto w-full max-w-2xl px-6 md:px-10">
           <div className="w-full mx-auto border-t border-gray-150 dark:border-gray-850 pt-3 max-w-xl">
             <p>{t.footerText.replace('{year}', new Date().getFullYear())}</p>
           </div>
