@@ -64,6 +64,7 @@ export const useStore = create((set, get) => ({
   isRecording: false,
   error: null,
   emergencyMessage: null,
+  emergencyMessageCache: { en: null, hi: null },
 
   // Reset Session for a fresh start
   resetSession: (clearLanguage = false) => {
@@ -96,16 +97,48 @@ export const useStore = create((set, get) => ({
       isRecording: false,
       error: null,
       emergencyMessage: null,
+      emergencyMessageCache: { en: null, hi: null },
     })
   },
 
   // Actions
   setLanguage: async (lang) => {
     localStorage.setItem('carepath_lang', lang);
-    const { sessionId, triageResult, conversationHistory, triageResultCache } = get();
+    const { sessionId, triageResult, conversationHistory, triageResultCache, emergencyMessage, emergencyMessageCache } = get();
 
     // Set language immediately in state so UI headers and static elements toggle instantly
     set({ language: lang });
+
+    if (emergencyMessage) {
+      const cachedMsg = emergencyMessageCache ? emergencyMessageCache[lang] : null;
+      if (cachedMsg) {
+        set({ emergencyMessage: cachedMsg, isLoading: false });
+      } else {
+        set({ isLoading: true });
+        try {
+          const response = await axios.post(`${API_BASE_URL}/translate-results?session_id=${sessionId}&language=${lang}`, {}, {
+            headers: getHeaders()
+          });
+
+          if (sessionId !== get().sessionId) return;
+
+          const translatedReasoning = response.data.triage_result?.reasoning_summary || emergencyMessage;
+
+          set((state) => ({
+            emergencyMessage: translatedReasoning,
+            emergencyMessageCache: {
+              ...state.emergencyMessageCache,
+              [lang]: translatedReasoning
+            },
+            isLoading: false
+          }));
+        } catch (error) {
+          if (sessionId !== get().sessionId) return;
+          console.error("Emergency translation error:", error);
+          set({ isLoading: false });
+        }
+      }
+    }
 
     if (triageResult) {
       // Check dual-language in-memory cache
@@ -269,10 +302,15 @@ export const useStore = create((set, get) => ({
       console.log("Triage API response:", data)
 
       if (data.status === 'emergency') {
-        set({
+        const currentLang = get().language || 'en';
+        set((state) => ({
           emergencyMessage: data.message,
+          emergencyMessageCache: {
+            ...state.emergencyMessageCache,
+            [currentLang]: data.message
+          },
           isLoading: false
-        })
+        }))
         return
       }
 

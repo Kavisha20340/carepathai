@@ -31,6 +31,7 @@ export const generateAndPrintReport = ({
   conversationHistory,
   triageResult,
   sessionState,
+  emergencyMessage,
   onReportGenerated
 }) => {
   const lang = language || 'en';
@@ -49,9 +50,10 @@ export const generateAndPrintReport = ({
     return `<div style="margin-bottom:8px;padding:8px 12px;border-radius:8px;background:${isUser ? '#f0fdf4' : '#f8fafc'};border-left:4px solid ${isUser ? '#10b981' : '#6366f1'};border:1px solid #e2e8f0;"><div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span style="font-weight:700;font-size:11px;color:${isUser ? '#047857' : '#4338ca'};">${roleLabel}</span><span style="font-size:10px;color:#94a3b8;">${timeStr}</span></div><div style="font-size:12px;color:#1e293b;line-height:1.4;">${msg.text}</div></div>`;
   }).join('');
 
-  const urgencyLabel = { self_care: t.self_care, routine: t.routine, urgent: t.urgent, emergency: t.emergency }[triageResult?.urgency_level] || triageResult?.urgency_level || '';
-  const specialistLabel = sT[triageResult?.specialist_type] || triageResult?.specialist_type || '';
-  const confidenceLabel = { high: t.high, moderate: t.moderate, low: t.low }[triageResult?.confidence] || triageResult?.confidence || '';
+  const urgencyLabel = { self_care: t.self_care, routine: t.routine, urgent: t.urgent, emergency: t.emergency }[triageResult?.urgency_level] || triageResult?.urgency_level || (emergencyMessage ? t.emergency : '');
+  const specialistLabel = sT[triageResult?.specialist_type] || triageResult?.specialist_type || (emergencyMessage ? (isHindi ? 'आपातकालीन चिकित्सा (112 / 108)' : 'Emergency Services (112 / 108)') : '');
+  const confidenceLabel = { high: t.high, moderate: t.moderate, low: t.low }[triageResult?.confidence] || triageResult?.confidence || (emergencyMessage ? t.high : '');
+  const reasoningSummary = triageResult?.reasoning_summary || emergencyMessage || '';
 
   const slotLabels = { chief_complaint: t.chiefComplaint, body_location: t.bodyLocation, onset: t.onset, duration: t.duration, severity: t.severity, associated_symptoms: t.associatedSymptoms, aggravating_factors: t.aggravatingFactors };
 
@@ -67,7 +69,7 @@ export const generateAndPrintReport = ({
       slotsHtmlList += `<div style="padding:8px 10px;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0;"><div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;">${label}</div><div style="font-size:12px;font-weight:700;color:${isFilled ? '#4f46e5' : '#94a3b8'};margin-top:2px;">${displayVal}</div></div>`;
     });
   }
-  const fullRawReportTrace = `CAREPATH AI REPORT\nSession ID: ${sessionId}\nTimestamp: ${new Date().toLocaleString()}\nLanguage: ${lang}\n\n1. DIALOGUE:\n${dialogueTextTrace}\n2. ASSESSMENT:\n• ${t.urgencyLevel}: ${urgencyLabel}\n• ${t.specialistType}: ${specialistLabel}\n• ${t.confidence}: ${confidenceLabel}\n${t.clinicalReasoning}:\n${triageResult?.reasoning_summary || ''}\n\n3. METADATA:\n${slotsTextTrace}`.trim();
+  const fullRawReportTrace = `CAREPATH AI REPORT\nSession ID: ${sessionId}\nTimestamp: ${new Date().toLocaleString()}\nLanguage: ${lang}\n\n1. DIALOGUE:\n${dialogueTextTrace}\n2. ASSESSMENT:\n• ${t.urgencyLevel}: ${urgencyLabel}\n• ${t.specialistType}: ${specialistLabel}\n• ${t.confidence}: ${confidenceLabel}\n${t.clinicalReasoning}:\n${reasoningSummary}\n\n3. METADATA:\n${slotsTextTrace}`.trim();
 
   if (onReportGenerated && typeof onReportGenerated === 'function') {
     onReportGenerated(fullRawReportTrace);
@@ -96,7 +98,7 @@ export const generateAndPrintReport = ({
 
   const iframeDoc = iframe.contentWindow.document;
   iframeDoc.open();
-  iframeDoc.write(`<!DOCTYPE html><html lang="${lang}"><head><meta charset="utf-8"/><title>${targetFilename}</title><style>${css}</style></head><body><div class="header"><div class="logo">CarePathAI</div><div class="subtitle">${title}</div></div><div class="meta-bar"><span><strong>Session ID:</strong> ${sessionId}</span><span><strong>Date:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div><div class="section-title">${isHindi ? "1. लक्षण बातचीत का विवरण" : "1. Patient Intake Dialogue"}</div><div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">${dialogueHtmlList}</div><div class="section-title">${isHindi ? "2. सटीक लक्षण विश्लेषण" : "2. Symptom Capture Analysis"}</div><div class="grid-3"><div class="badge-box"><div class="badge-label">${t.urgencyLevel}</div><div class="badge-val" style="color:#4338ca;">${urgencyLabel}</div></div><div class="badge-box"><div class="badge-label">${t.specialistType}</div><div class="badge-val" style="color:#047857;">${specialistLabel}</div></div><div class="badge-box"><div class="badge-label">${t.confidence}</div><div class="badge-val">${confidenceLabel}</div></div></div><div class="reasoning-box"><div class="reasoning-title">${t.clinicalReasoning}</div><div class="reasoning-text">${triageResult?.reasoning_summary || ''}</div></div><div class="section-title">${isHindi ? "3. लक्षणों का विवरण" : "3. Symptom Summary"}</div><div class="slot-grid">${slotsHtmlList}</div></body></html>`);
+  iframeDoc.write(`<!DOCTYPE html><html lang="${lang}"><head><meta charset="utf-8"/><title>${targetFilename}</title><style>${css}</style></head><body><div class="header"><div class="logo">CarePathAI</div><div class="subtitle">${title}</div></div><div class="meta-bar"><span><strong>Session ID:</strong> ${sessionId}</span><span><strong>Date:</strong> ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div><div class="section-title">${isHindi ? "1. लक्षण बातचीत का विवरण" : "1. Patient Intake Dialogue"}</div><div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">${dialogueHtmlList}</div><div class="section-title">${isHindi ? "2. सटीक लक्षण विश्लेषण" : "2. Symptom Capture Analysis"}</div><div class="grid-3"><div class="badge-box"><div class="badge-label">${t.urgencyLevel}</div><div class="badge-val" style="color:${emergencyMessage || triageResult?.urgency_level === 'emergency' ? '#dc2626' : '#4338ca'};">${urgencyLabel}</div></div><div class="badge-box"><div class="badge-label">${t.specialistType}</div><div class="badge-val" style="color:#047857;">${specialistLabel}</div></div><div class="badge-box"><div class="badge-label">${t.confidence}</div><div class="badge-val">${confidenceLabel}</div></div></div><div class="reasoning-box"><div class="reasoning-title">${t.clinicalReasoning}</div><div class="reasoning-text">${reasoningSummary}</div></div><div class="section-title">${isHindi ? "3. लक्षणों का विवरण" : "3. Symptom Summary"}</div><div class="slot-grid">${slotsHtmlList}</div></body></html>`);
   iframeDoc.close();
 
   setTimeout(() => {

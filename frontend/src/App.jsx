@@ -13,7 +13,7 @@ import { translations } from './utils/translations';
 import { generateAndPrintReport } from './utils/reportGenerator';
 
 function AppContent() {
-  const { triageResult, sessionId, resetSession, turnCount, maxTurns, language, setLanguage, conversationHistory, sessionState, saveReportTrace } = useStore();
+  const { triageResult, sessionId, resetSession, turnCount, maxTurns, language, setLanguage, conversationHistory, sessionState, emergencyMessage, saveReportTrace } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -38,6 +38,7 @@ function AppContent() {
       conversationHistory,
       triageResult,
       sessionState,
+      emergencyMessage,
       onReportGenerated: (reportText) => {
         saveReportTrace(reportText);
       }
@@ -52,7 +53,7 @@ function AppContent() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 flex flex-col font-sans transition-colors duration-200">
       <EmergencyOverlay />
 
-      <header className="sticky top-0 z-30 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md py-2 border-b border-gray-100 dark:border-gray-800/40">
+      <header className="sticky top-0 z-50 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md py-2 border-b border-gray-100 dark:border-gray-800/40">
         <div className="mx-auto w-full max-w-2xl px-6 md:px-10 flex items-center justify-between transition-all duration-300">
           <div className="w-full mx-auto max-w-xl flex items-center justify-between">
             <div className="text-left flex flex-col justify-center">
@@ -92,7 +93,7 @@ function AppContent() {
                 </div>
               )}
 
-              {isTriagePath && triageResult && (
+              {isTriagePath && (triageResult || emergencyMessage) && (
                 <button
                   onClick={handleDownloadReport}
                   className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 rounded-xl font-bold flex items-center gap-1.5 text-xs transition-all cursor-pointer"
