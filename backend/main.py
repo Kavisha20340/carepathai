@@ -478,7 +478,7 @@ async def translate_results(
     # Extract the necessary values
     summary = medgemma_response.get('final_summary', {}) or {}
     raw_specialty = summary.get('specialty_recommendation')
-    clinical_reasoning = summary.get('clinical_reasoning') or 'Evaluation complete.'
+    clinical_reasoning = summary.get('clinical_reasoning') or medgemma_response.get('urgency', {}).get('justification') or 'Evaluation complete.'
     urgency_level = medgemma_response.get('urgency', {}).get('level', '').lower()
 
     # Reconstruct English structures

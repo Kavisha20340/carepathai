@@ -1,9 +1,8 @@
 import React, { useEffect } from 'react';
-import { FaExclamationTriangle, FaPhoneAlt, FaRedo, FaBriefcaseMedical, FaBaby, FaBrain, FaRegCommentDots, FaSkull } from 'react-icons/fa';
+import { FaPhoneAlt, FaBriefcaseMedical, FaBaby, FaBrain, FaRegCommentDots, FaSkull } from 'react-icons/fa';
 import { useStore } from '../store/useStore';
 import { translations } from '../utils/translations';
 import { getEmergencyNumbers } from '../utils/emergencyData';
-import { useNavigate } from 'react-router-dom';
 
 const getIcon = (type) => {
   if (type === 'medical') return <FaBriefcaseMedical className="text-orange-500" />;
@@ -15,8 +14,7 @@ const getIcon = (type) => {
 };
 
 export default function EmergencyOverlay() {
-  const { emergencyMessage, resetSession, language, isLoading } = useStore();
-  const navigate = useNavigate();
+  const { emergencyMessage, language, isLoading } = useStore();
 
   // Lock body scroll while emergency overlay is displayed to eliminate double scrollbars
   useEffect(() => {
@@ -85,7 +83,7 @@ export default function EmergencyOverlay() {
             </div>
 
             {/* Secondary Specialized Helpline List */}
-            <div className="flex flex-col gap-1.5 mb-3 text-left">
+            <div className="flex flex-col gap-1.5 text-left">
               {secondaryNumbers.map((s, idx) => (
                 <div key={idx} className="flex items-center justify-between gap-2 p-1.5 px-2.5 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-150 dark:border-gray-750">
                   <div className="flex items-center gap-2 min-w-0">
@@ -111,15 +109,6 @@ export default function EmergencyOverlay() {
                 </div>
               ))}
             </div>
-
-            {/* Standalone Full-Width Start Over Button at Bottom */}
-            <button
-              onClick={handleRestart}
-              className="w-full py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition-colors border border-gray-200 dark:border-gray-700 cursor-pointer"
-            >
-              <FaRedo className="text-[10px]" />
-              <span>{t.btnRestart}</span>
-            </button>
           </div>
         </div>
       </div>
