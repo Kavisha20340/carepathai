@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaPhoneAlt, FaBriefcaseMedical, FaBaby, FaBrain, FaRegCommentDots, FaSkull } from 'react-icons/fa';
+import { FaPhoneAlt, FaBriefcaseMedical, FaBaby, FaBrain, FaRegCommentDots, FaSkull, FaExclamationTriangle } from 'react-icons/fa';
 import { useStore } from '../store/useStore';
 import { translations } from '../utils/translations';
 import { getEmergencyNumbers } from '../utils/emergencyData';
@@ -29,15 +29,21 @@ export default function EmergencyOverlay() {
     <div className="w-full max-w-2xl mx-auto bg-red-600/90 dark:bg-red-950/90 shadow-2xl border-b-2 border-red-500/80 rounded-2xl overflow-hidden animate-fadeIn">
       <div className="p-3 sm:p-5">
         <div className="bg-white dark:bg-gray-900 rounded-2xl px-3.5 sm:px-7 md:px-8 pb-3.5 sm:pb-4 md:pb-5 pt-5 shadow-inner border border-red-200 dark:border-red-900/50">
-          {/* Title Header */}
-          <div className="flex flex-col items-center justify-center mb-2">
+          {/* Title Header with Animated Red Emergency Icon Badge */}
+          <div className="flex flex-col items-center justify-center mb-0.5">
+            <div className="relative flex items-center justify-center my-0.5 mb-2">
+              <span className="absolute inline-flex h-12 w-12 rounded-full bg-red-600/50 dark:bg-red-600/60 animate-ping" />
+              <div className="relative w-11 h-11 rounded-full bg-red-100 dark:bg-red-950/80 border-2 border-red-500 dark:border-red-500 flex items-center justify-center text-red-600 dark:text-red-500 text-xl shadow-md animate-pulse">
+                <FaExclamationTriangle />
+              </div>
+            </div>
             <h1 className="text-xs sm:text-sm font-black text-red-600 dark:text-red-500 tracking-wide uppercase whitespace-nowrap leading-none px-3 py-1.5 bg-red-50 dark:bg-red-950/20 rounded-lg inline-block">
               {t.criticalAlert}
             </h1>
           </div>
 
           {/* Emergency Alert Message */}
-          <div className="p-3 bg-red-50 dark:bg-red-950/25 border border-red-100 dark:border-red-900/40 rounded-xl mb-3 text-left">
+          <div className="p-2.5 px-3 bg-red-50 dark:bg-red-950/25 border border-red-100 dark:border-red-900/40 rounded-xl mb-3 text-left">
             {isLoading ? (
               <div className="space-y-2 py-1 animate-pulse">
                 <div className="h-3.5 bg-red-200/60 dark:bg-red-900/50 rounded w-full"></div>
