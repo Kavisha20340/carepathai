@@ -252,6 +252,12 @@ async def triage(request: TriageRequest, background_tasks: BackgroundTasks, uid:
             max_turns=request.max_turns
         )
 
+        # Extract AI question and check against PREVIOUS turns before appending current turn
+        previous_ai_questions = [
+            line.replace("AI:", "").strip().lower() 
+            for line in conversation_history if line.startswith("AI:")
+        ]
+        
         # 4. Append history cleanly AFTER reasoning turn
         conversation_history.append(f"User: {transcript_for_ai}")
         ai_question = medgemma_response.get('conversation_status', {}).get('next_question_to_user')
@@ -262,10 +268,22 @@ async def triage(request: TriageRequest, background_tasks: BackgroundTasks, uid:
         summary_from_ai = medgemma_response.get("final_summary", {})
         if summary_from_ai:
             session_state_fields = SessionState.model_fields.keys()
-            update_data = {
-                key: summary_from_ai[key] for key in summary_from_ai
-                if key in session_state_fields and summary_from_ai.get(key) is not None
-            }
+            update_data = {}
+            for key in summary_from_ai:
+                if key in session_state_fields and summary_from_ai.get(key) is not None:
+                    val = summary_from_ai[key]
+                    # Sanitize list/string mismatches from LLM output
+                    if key in ['associated_symptoms', 'red_flags_present']:
+                        if isinstance(val, str):
+                            val = [val.strip()] if val.strip() else []
+                        elif not isinstance(val, list):
+                            val = []
+                    else:
+                        if isinstance(val, list):
+                            val = ", ".join(str(x) for x in val if x) if val else None
+                    if val is not None:
+                        update_data[key] = val
+
             if update_data:
                 session_state.update(update_data)
                 logger.info(f"Updated session_state with: {update_data}")
@@ -302,6 +320,12 @@ async def triage(request: TriageRequest, background_tasks: BackgroundTasks, uid:
         # 5. Decide whether to follow-up or complete the triage
         is_complete = medgemma_response.get('conversation_status', {}).get('is_complete', False)
         
+        # Check if the AI's question is a duplicate of a previously asked question in history
+        next_q = medgemma_response.get('conversation_status', {}).get('next_question_to_user')
+        if next_q and next_q.strip().lower() in previous_ai_questions:
+            logger.warning(f"MedGemma attempted to repeat a previously asked question ('{next_q}'). Forcing triage completion.")
+            is_complete = True
+
         # HARD SAFETY GUARDRAIL: Force completion if turn_count >= max_turns
         if request.turn_count >= request.max_turns:
             logger.info(f"Max turns ({request.max_turns}) reached (Current turn: {request.turn_count}). Forcing triage completion.")

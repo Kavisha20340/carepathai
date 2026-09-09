@@ -27,6 +27,7 @@ export const translations = {
     btnStopping: "Processing audio...",
     btnAnalyzing: "Analyzing symptoms...",
     errNoSpeech: "Could not hear any speech clearly. Please try speaking again.",
+    errMaxDuration: "Recording reached the 1-minute limit. Please tap the microphone and record again.",
 
     // Step 2: Structured Results (TriageCard)
     triageSuccess: "Triage Succeeded & Saved to Firestore",
@@ -119,6 +120,7 @@ export const translations = {
     btnStopping: "ऑडियो प्रोसेस हो रहा है...",
     btnAnalyzing: "लक्षणों का विश्लेषण हो रहा है...",
     errNoSpeech: "आपकी आवाज़ साफ़ सुनाई नहीं दी। कृपया पुनः बोलने का प्रयास करें।",
+    errMaxDuration: "रिकॉर्डिंग 1 मिनट की सीमा तक पहुँच गई। कृपया दोबारा रिकॉर्ड करने के लिए माइक्रोफ़ोन दबाएँ।",
 
     // Step 2: Structured Results (TriageCard)
     triageSuccess: "ट्राइएज सफल रहा और फायरस्टोर में सुरक्षित किया गया",

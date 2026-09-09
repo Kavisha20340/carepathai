@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Literal, Any, Union
 
 class SessionState(BaseModel):
@@ -8,9 +8,16 @@ class SessionState(BaseModel):
     duration: Optional[str] = None
     severity: Optional[Any] = None
     associated_symptoms: List[str] = Field(default_factory=list)
-    aggravating_factors: Optional[str] = None
+    aggravating_factors: Optional[Union[str, List[str]]] = None
     red_flags_present: List[str] = Field(default_factory=list)
     relevant_history: Optional[str] = None
+
+    @field_validator('aggravating_factors', 'chief_complaint', 'body_location', 'onset', 'duration', 'relevant_history', mode='before')
+    @classmethod
+    def join_list_to_str(cls, v: Any) -> Optional[str]:
+        if isinstance(v, list):
+            return ", ".join(str(item) for item in v if item)
+        return v
 
 class TriageRequest(BaseModel):
     transcript: str

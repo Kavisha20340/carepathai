@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 # Initialize Firebase Admin SDK safely
 db = None
+_local_sessions: Dict[str, Dict[str, Any]] = {}
+
 try:
     if not firebase_admin._apps:
         # If GOOGLE_APPLICATION_CREDENTIALS is set in .env or active in shell,
@@ -25,12 +27,11 @@ except Exception as e:
 
 def get_session(session_id: str) -> Optional[Dict[str, Any]]:
     """
-    Fetches the session state and metadata from Firestore for a given session_id.
+    Fetches the session state and metadata from Firestore or local memory fallback for a given session_id.
     Returns the document dict if found, else None.
     """
     if db is None:
-        logger.warning("Firestore is not initialized. get_session returning None.")
-        return None
+        return _local_sessions.get(session_id)
         
     try:
         doc_ref = db.collection("sessions").document(session_id)
@@ -39,34 +40,35 @@ def get_session(session_id: str) -> Optional[Dict[str, Any]]:
             logger.info(f"Retrieved session document for ID: {session_id}")
             return doc.to_dict()
         else:
-            logger.info(f"No existing session document found for ID: {session_id}")
-            return None
+            logger.info(f"No existing session document found in Firestore for ID: {session_id}. Checking local memory.")
+            return _local_sessions.get(session_id)
     except Exception as e:
-        logger.error(f"Error fetching session {session_id} from Firestore: {e}", exc_info=True)
-        return None
+        logger.error(f"Error fetching session {session_id} from Firestore: {e}. Falling back to local memory.")
+        return _local_sessions.get(session_id)
 
 def update_session(session_id: str, uid: str, session_state: dict, turn_count: int, conversation_history: list, triage_result: Optional[dict] = None) -> bool:
     """
-    Persists or updates the session document in Firestore.
+    Persists or updates the session document in Firestore and local in-memory fallback store.
     Document schema matches: {uid, session_state, turn_count, conversation_history, triage_result, timestamp}
     """
+    payload = {
+        "uid": uid,
+        "session_state": session_state,
+        "turn_count": turn_count,
+        "conversation_history": conversation_history,
+        "triage_result": triage_result,
+        "timestamp": firestore.SERVER_TIMESTAMP if firestore else None
+    }
+    
+    # Store in local memory for instant fallback / local development
+    _local_sessions[session_id] = payload
+
     if db is None:
-        logger.warning("Firestore is not initialized. update_session skipping.")
-        return False
+        logger.info(f"Updated local in-memory session for ID: {session_id}")
+        return True
         
     try:
         doc_ref = db.collection("sessions").document(session_id)
-        
-        # Build Firestore update payload
-        payload = {
-            "uid": uid,
-            "session_state": session_state,
-            "turn_count": turn_count,
-            "conversation_history": conversation_history,
-            "triage_result": triage_result,
-            "timestamp": firestore.SERVER_TIMESTAMP
-        }
-        
         doc_ref.set(payload, merge=True)
         logger.info(f"Successfully updated Firestore session document for ID: {session_id}")
         return True

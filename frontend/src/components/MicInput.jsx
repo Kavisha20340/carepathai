@@ -10,20 +10,33 @@ export default function MicInput() {
   const mediaRecorderRef = useRef(null)
   const streamRef = useRef(null)
   const audioChunksRef = useRef([])
+  const maxRecordingTimerRef = useRef(null)
+  const isDurationExceededRef = useRef(false)
+
+  const isModalError = 
+    error === translations.en.errNoSpeech || error === translations.hi.errNoSpeech ||
+    error === translations.en.errMaxDuration || error === translations.hi.errMaxDuration
 
   useEffect(() => {
-    const isNoSpeechError = error === translations.en.errNoSpeech || error === translations.hi.errNoSpeech
-    if (isNoSpeechError) {
+    if (isModalError) {
       const timer = setTimeout(() => {
         setError(null)
-      }, 3000)
+      }, 2500) // Auto-dismiss error modal after 2.5 seconds
       return () => clearTimeout(timer)
     }
-  }, [error, setError])
+  }, [error, isModalError, setError])
+
+  useEffect(() => {
+    return () => {
+      if (maxRecordingTimerRef.current) clearTimeout(maxRecordingTimerRef.current)
+    }
+  }, [])
 
   const startRecording = async () => {
     setError(null)
     setRecordState('starting')
+    isDurationExceededRef.current = false
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -49,6 +62,28 @@ export default function MicInput() {
         resetRecorder()
       }
       mediaRecorder.onstop = async () => {
+        if (maxRecordingTimerRef.current) {
+          clearTimeout(maxRecordingTimerRef.current)
+          maxRecordingTimerRef.current = null
+        }
+
+        // If recording reached the 55-second threshold, discard audio and show 1-minute limit warning modal
+        if (isDurationExceededRef.current) {
+          isDurationExceededRef.current = false
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(t => t.stop())
+            streamRef.current = null
+          }
+          audioChunksRef.current = []
+          setRecordState('idle')
+          setIsRecording(false)
+
+          const lang = language || 'en'
+          const errMsg = translations[lang]?.errMaxDuration || translations.en.errMaxDuration
+          setError(errMsg)
+          return
+        }
+
         setRecordState('stopping')
         const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType || 'audio/webm' })
         if (streamRef.current) {
@@ -73,6 +108,16 @@ export default function MicInput() {
       mediaRecorder.start(250)
       setRecordState('recording')
       setIsRecording(true)
+
+      // Set 55-second safety timer (55,000ms) to trigger 1-minute limit reset before GCP STT limit
+      if (maxRecordingTimerRef.current) clearTimeout(maxRecordingTimerRef.current)
+      maxRecordingTimerRef.current = setTimeout(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          console.log("Recording duration reached 55s threshold. Discarding audio and triggering 1-minute limit warning.")
+          isDurationExceededRef.current = true
+          stopRecording()
+        }
+      }, 55000)
     } catch (err) {
       console.error(err)
       setError("Unable to access microphone.")
@@ -81,6 +126,10 @@ export default function MicInput() {
   }
 
   const stopRecording = () => {
+    if (maxRecordingTimerRef.current) {
+      clearTimeout(maxRecordingTimerRef.current)
+      maxRecordingTimerRef.current = null
+    }
     setRecordState('stopping')
     try {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -95,6 +144,11 @@ export default function MicInput() {
   }
 
   const resetRecorder = () => {
+    isDurationExceededRef.current = false
+    if (maxRecordingTimerRef.current) {
+      clearTimeout(maxRecordingTimerRef.current)
+      maxRecordingTimerRef.current = null
+    }
     try {
       if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
     } catch (e) { console.error(e) }
@@ -172,7 +226,7 @@ export default function MicInput() {
         </button>
       </form>
 
-      {error && (error === translations.en.errNoSpeech || error === translations.hi.errNoSpeech) && (
+      {error && isModalError && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fadeIn">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl max-w-sm w-full border border-gray-100 dark:border-gray-700 text-center animate-scaleIn">
             <div className="w-12 h-12 bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -185,7 +239,7 @@ export default function MicInput() {
         </div>
       )}
 
-      {error && error !== translations.en.errNoSpeech && error !== translations.hi.errNoSpeech && (
+      {error && !isModalError && (
         <div className="mt-4 flex gap-2 p-3 bg-red-50 text-red-700 rounded-xl text-sm">
           <FaExclamationTriangle className="mt-0.5 flex-shrink-0" />
           <span>{error}</span>
