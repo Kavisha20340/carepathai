@@ -1,75 +1,61 @@
-# Contributing to CarePathAI
+# CarePathAI — Development & Contribution Guide
 
-Thank you for your interest in contributing to CarePathAI! This guide will help you get your development environment set up and ready to go.
+Thank you for contributing to CarePathAI! This guide covers local environment setup, testing, and contribution conventions.
 
-## Setting up the Development Environment
+---
 
-### Backend
+## 1. Local Environment Setup
 
-**1. Virtual Environment Setup**
-
-From the root of the workspace directory, create a Python virtual environment to manage dependencies cleanly.
-
-*   **Create the Virtual Environment:**
-
-    ```powershell
-    python -m venv .venv
-    ```
-
-*   **Activate the Virtual Environment:**
-
-    ```powershell
-    # In PowerShell:
-    .\.venv\Scripts\Activate.ps1
-    ```
-
-**2. Dependency Installation**
-
-With the virtual environment active, install the required packages from the requirements file.
-
+### Backend Setup (Python 3.11)
 ```powershell
+# 1. Create and activate virtual environment
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1   # On Windows PowerShell
+# source .venv/bin/activate    # On Linux / macOS
+
+# 2. Install dependencies
 python -m pip install --upgrade pip
 python -m pip install -r backend/requirements.txt
+
+# 3. Configure local environment variables (.env in workspace root)
+# Add: GCP_PROJECT=your-gcp-project-id
+# Add: PLACES_API_KEY=your-google-places-key
+# Add: MEDGEMMA_API_URL=http://localhost:8080/generate
+
+# 4. Start backend server with auto-reload
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-**3. Running the Automated Integration Tests**
+### Frontend Setup (Node.js 20+)
+```bash
+# 1. Navigate into frontend directory
+cd frontend
 
-An end-to-end integration test suite is provided to test the triage logic, deterministic red flags, specialist backstops, and live Gemini connectivity across multiple conversational turns (both in English and Hindi).
+# 2. Install dependencies
+npm install
 
-To execute the test suite, run:
+# 3. Start development server
+npm run dev
+```
+
+---
+
+## 2. Running Automated Integration Tests
+
+Execute the comprehensive test suite (`backend/test_triage_flow.py`) covering multi-turn intake, emergency red-flag triggers, specialist mapping, acoustic denoising, and Hindi translation caching:
 
 ```powershell
 python backend/test_triage_flow.py
 ```
 
-**4. Running the Backend Server Locally**
+---
 
-To spin up the local development server with live-reloading enabled, execute:
+## 3. Contribution Guidelines & Standards
 
-```powershell
-python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
-```
+| Domain | Standard |
+|---|---|
+| **Python Code Style** | PEP 8 compliant, type hints on FastAPI handlers and Pydantic models. |
+| **React / JS Style** | ESLint + React Hooks rules, functional components, Zustand store encapsulation. |
+| **Commit Messages** | Conventional Commits (`feat: ...`, `fix: ...`, `docs: ...`, `refactor: ...`). |
+| **Pull Requests** | Target `v2` or `main` branch with clear description and test verification outputs. |
 
-### Frontend
-
-1.  **Install the dependencies:**
-
-    ```
-    npm install
-    ```
-
-2.  **Run the frontend development server:**
-
-    ```
-    npm run dev
-    ```
-
-## Project Conventions
-
-- **Code Style:** Please follow the PEP 8 style guide for Python and the Prettier style guide for JavaScript and React.
-- **Commit Messages:** Please use the Conventional Commits specification for your commit messages.
-- **Branching:** Please create a new branch for each feature or bug fix.
-
-## Submitting a Pull Request
-
-When you are ready to submit your changes, please open a pull request with a clear and concise description of the changes you have made. Please also include a link to any relevant issues or documentation.

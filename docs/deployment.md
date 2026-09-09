@@ -1,211 +1,125 @@
-# Full-Stack Deployment Guide
+# CarePathAI — Full-Stack Deployment Guide
 
-This guide contains complete documentation of the architecture, configuration, step-by-step setup, troubleshooting logs, and day-to-day operations for deploying and hosting the **CarepathAI Frontend** (Vite + React) and **CarepathAI Backend** (FastAPI + Python) on **Google Cloud Run** using **Google Cloud Build**, **Artifact Registry**, and **Google Cloud Secret Manager**.
+This guide details the deployment of **CarePathAI Frontend** (Vite + React + Nginx) and **CarePathAI Backend** (FastAPI + Python) to **Google Cloud Run** using **Google Cloud Build**, **Artifact Registry**, and **Google Cloud Secret Manager**.
 
 ---
 
-## 1. Architectural Overview
-
-In production, the application is deployed as a secure, high-performance, decoupled dual-service architecture on Google Cloud Run:
+## 1. Cloud Architecture Overview
 
 ```
 [User Browser]
-      |
-      +---> (HTTPS) ---> [CarepathAI Frontend] (Serves static assets via Nginx on Port 80)
-      |
-      +---> (HTTPS) ---> [CarepathAI Backend] (Runs FastAPI via Uvicorn on Port 8080)
-                             |
-                             +---> Google Cloud Secret Manager (Fetches PLACES_API_KEY)
-                             +---> Vertex AI / Gemini API (Symptom Triage)
-                             +---> Google Cloud Speech-to-Text (Transcription)
-                             +---> Cloud Firestore (Session Recovery & Storage)
+      │
+      +---> (HTTPS) ---> [CarepathAI Frontend Cloud Run] (Port 80 via Nginx)
+      │
+      +---> (HTTPS) ---> [CarepathAI Backend Cloud Run] (Port 8080 via Uvicorn)
+                             │
+                             +---> Google Secret Manager (PLACES_API_KEY)
+                             +---> Vertex AI Gemini 2.5 Flash API (Triage & Denoising)
+                             +---> Google Cloud Speech-to-Text API (STT)
+                             +---> Cloud Firestore (Session DB & Caching)
 ```
 
-1.  **CarepathAI Frontend (Cloud Run)**: A lightweight, containerized **Nginx** server hosting optimized static React assets. It routes client-side pages seamlessly and communicates with the backend over secure HTTPS.
-2.  **CarepathAI Backend (Cloud Run)**: A serverless **FastAPI** web server running on Uvicorn. It executes symptom triage logic, interacts with GCP platform services (Vertex AI, Speech-to-Text, Firestore) natively using application-default credentials, and pulls third-party API keys securely from **GCP Secret Manager**.
+| Microservice | Container Base | Port | Deployment Mechanism |
+|---|---|---|---|
+| `carepathai-frontend` | `nginx:stable-alpine` | `80` | Google Cloud Build (`cloudbuild.yaml`) $\rightarrow$ Artifact Registry |
+| `carepathai-backend` | `python:3.11-slim` | `8080` | Source-based Cloud Run Deploy (`gcloud run deploy --source=./backend`) |
+| `medgemma-cpu` | `python:3.11-slim` + `llama-cpp-python` | `8080` | Standalone Docker build with baked GGUF weights $\rightarrow$ Cloud Run (8 vCPU / 8GiB) |
 
 ---
 
-## 2. Configuration Files
-
-To containerize, optimize, and automate the deployment pipeline, we utilize the following critical files:
-
-### a. Custom Web Server Configuration
-*   **File:** `/frontend/nginx.conf`
-*   **Purpose:** Solves the "404 on Refresh" problem by configuring Nginx to serve `/index.html` for any client-side routes requested directly.
-
-### b. Frontend Multi-Stage Containerization
-*   **File:** `/frontend/Dockerfile`
-*   **Purpose:** Builds React assets in a clean Node.js stage, compiles them, and packages only the final static assets into Nginx. It supports the `VITE_API_BASE_URL` build argument to dynamically link the backend during compilation.
-
-### c. Backend Containerization
-*   **File:** `/backend/Dockerfile`
-*   **Purpose:** Installs the Python runtime and project dependencies. Packages code inside `/app/backend` to guarantee absolute import resolutions (e.g., `from backend.models import ...`) are fully maintained at runtime.
-
-### d. Automated Build Pipeline
-*   **File:** `/cloudbuild.yaml`
-*   **Purpose:** Automates building the frontend image via Google Cloud Build and pushing it to Artifact Registry.
-
----
-
-## 3. Step-by-Step Deployment
-
-Follow these steps to deploy both the backend and frontend to a secure, live production environment.
+## 2. Step-by-Step Deployment
 
 ### Step 1: Authenticate with Google Cloud
-Ensure your local CLI is logged in and pointed to your active GCP project:
 ```powershell
 gcloud auth login
-gcloud config set project your-gcp-project-id
+gcloud config set project <YOUR_GCP_PROJECT_ID>
 ```
 
-### Step 2: Deploy the Backend to Cloud Run
-Run this command from your root directory to upload your source code, containerize it, and deploy it to Cloud Run:
+### Step 2: Deploy Backend to Cloud Run
 ```powershell
-gcloud run deploy carepathai-backend --source=./backend --region=asia-south1 --allow-unauthenticated
+gcloud run deploy carepathai-backend `
+  --source=./backend `
+  --region=asia-south1 `
+  --allow-unauthenticated `
+  --set-env-vars=GCP_PROJECT=<YOUR_GCP_PROJECT_ID>,MEDGEMMA_API_URL=https://medgemma-cpu-xxxxx.a.run.app/generate
 ```
-Once deployed, Cloud Run will output your backend's secure Service URL. Note this URL, as it will look like:
-👉 `https://carepathai-backend-[YOUR_PROJECT_NUMBER].asia-south1.run.app`
+*Note the returned Backend Service URL (e.g. `https://carepathai-backend-[PROJECT_NUMBER].asia-south1.run.app`).*
 
-### Step 2b: Grant GCP IAM Permissions to the Service Account
-Because modern Google Cloud projects enforce "least privilege by default", the default Cloud Run service account has no active roles initially. You must grant it explicit permissions to access Vertex AI (Gemini), Cloud Firestore, Speech-to-Text, and Cloud Translation.
-
-Run these 4 commands in your terminal (replace `your-gcp-project-id` with your active project ID and `[PROJECT_NUMBER]` with your GCP project number):
-
+### Step 2b: Grant IAM Permissions
 ```powershell
-# 1. Grant access to Vertex AI (Gemini)
-gcloud projects add-iam-policy-binding your-gcp-project-id `
+gcloud projects add-iam-policy-binding <YOUR_GCP_PROJECT_ID> `
   --member="serviceAccount:[PROJECT_NUMBER]-compute@developer.gserviceaccount.com" `
   --role="roles/aiplatform.user"
 
-# 2. Grant access to Cloud Firestore
-gcloud projects add-iam-policy-binding your-gcp-project-id `
+gcloud projects add-iam-policy-binding <YOUR_GCP_PROJECT_ID> `
   --member="serviceAccount:[PROJECT_NUMBER]-compute@developer.gserviceaccount.com" `
   --role="roles/datastore.user"
 
-# 3. Grant access to Google Cloud Speech-to-Text
-gcloud projects add-iam-policy-binding your-gcp-project-id `
+gcloud projects add-iam-policy-binding <YOUR_GCP_PROJECT_ID> `
   --member="serviceAccount:[PROJECT_NUMBER]-compute@developer.gserviceaccount.com" `
   --role="roles/speech.client"
-
-# 4. Grant access to Google Cloud Translation
-gcloud projects add-iam-policy-binding your-gcp-project-id `
-  --member="serviceAccount:[PROJECT_NUMBER]-compute@developer.gserviceaccount.com" `
-  --role="roles/cloudtranslate.user"
 ```
 
 ### Step 3: Configure Credentials with GCP Secret Manager
-Sensitive keys (like `PLACES_API_KEY`) must not be hardcoded or written in plain-text environment variables. Use **Secret Manager** to store them securely.
+Sensitive keys (`PLACES_API_KEY`) are stored in Secret Manager and mounted dynamically.
 
-1.  **Enable the Secret Manager API:**
-    ```powershell
-    gcloud services enable secretmanager.googleapis.com
-    ```
-2.  **Create and Upload the Secret containing your API Key:**
-    *Note: Standard pipelines (like `echo "key" | gcloud ...`) or byte conversions in Windows PowerShell automatically append literal quotes, Carriage Returns (`\r\n`), or Byte Order Marks (BOM), which will corrupt the API key inside a Linux container. Follow this clean, multi-step process instead:*
-    
-    First, create the secret placeholder in Secret Manager:
-    ```powershell
-    gcloud secrets create PLACES_API_KEY
-    ```
-    
-    Next, write your actual unquoted key (replace `your-google-places-api-key` with your active Google Places key) to a clean temporary file, upload it, and delete the temporary file:
-    ```powershell
-    "your-google-places-api-key" | Set-Content -NoNewline -Encoding Ascii -Path secret.txt
-    gcloud secrets versions add PLACES_API_KEY --data-file=secret.txt
-    Remove-Item secret.txt
-    ```
-3.  **Grant Secret Access to your Cloud Run Service Account:**
-    Get your GCP project number:
-    ```powershell
-    gcloud projects describe $(gcloud config get project) --format="value(projectNumber)"
-    ```
-    Bind the **Secret Accessor** role to your default compute service account (replace `[PROJECT_NUMBER]` with your actual project number):
-    ```powershell
-    gcloud secrets add-iam-policy-binding PLACES_API_KEY `
-      --member="serviceAccount:[PROJECT_NUMBER]-compute@developer.gserviceaccount.com" `
-      --role="roles/secretmanager.secretAccessor"
-    ```
-4.  **Mount the Secret into the Backend:**
-    Update the backend configuration to safely pull this secret as an environment variable at startup:
-    ```powershell
-    gcloud run services update carepathai-backend `
-      --region=asia-south1 `
-      --set-secrets=PLACES_API_KEY=PLACES_API_KEY:latest
-    ```
+1. **Create and Upload Secret:**
+   ```powershell
+   gcloud secrets create PLACES_API_KEY
+   "your-google-places-api-key" | Set-Content -NoNewline -Encoding Ascii -Path secret.txt
+   gcloud secrets versions add PLACES_API_KEY --data-file=secret.txt
+   Remove-Item secret.txt
+   ```
 
-### Step 4: Deploy the Frontend with Build-Time Backend URL Binding
-Now, build and deploy the frontend. We will inject your deployed backend URL (from Step 2) so that the compiled React build knows where to send requests.
+2. **Mount Secret to Backend Service:**
+   ```powershell
+   gcloud secrets add-iam-policy-binding PLACES_API_KEY `
+     --member="serviceAccount:[PROJECT_NUMBER]-compute@developer.gserviceaccount.com" `
+     --role="roles/secretmanager.secretAccessor"
 
-Run the build submission command (replace the URL with your actual backend Service URL):
+   gcloud run services update carepathai-backend `
+     --region=asia-south1 `
+     --set-secrets=PLACES_API_KEY=PLACES_API_KEY:latest
+   ```
+
+### Step 4: Deploy Frontend via Google Cloud Build
+Build and deploy the frontend container, binding the backend API URL:
+
 ```powershell
-gcloud builds submit --config=cloudbuild.yaml --substitutions=_VITE_API_BASE_URL="https://carepathai-backend-[YOUR_PROJECT_NUMBER].asia-south1.run.app" .
+gcloud builds submit --config=cloudbuild.yaml --substitutions=_VITE_API_BASE_URL="https://carepathai-backend-[PROJECT_NUMBER].asia-south1.run.app" .
 ```
 
-The frontend will compile, containerize, and host itself on its own secure URL:
-👉 `https://carepathai-frontend-[YOUR_PROJECT_NUMBER].asia-south1.run.app`
+---
+
+## 3. Operational Troubleshooting & Management
+
+| Symptom | Cause | Solution |
+|---|---|---|
+| **404 on Refresh in Frontend** | Single-page application route missing Nginx fallback | Solved by `/frontend/nginx.conf` (`try_files $uri $uri/ /index.html;`). |
+| **CORS Error on API Call** | Cross-Origin Request blocked or URL mismatch | Ensure `_VITE_API_BASE_URL` uses `https://` backend URL during frontend Cloud Build. |
+| **Google Places Invalid API Key** | Secret key corrupted by PowerShell newline encoding | Upload key as ASCII with `-NoNewline` via `Set-Content` file buffer. |
+| **Cold Start Latency** | Cloud Run scaling to 0 idle instances | Scale to 1 warm min instance: `gcloud run services update carepathai-backend --region=asia-south1 --min-instances=1`. |
 
 ---
 
-## 4. Troubleshooting
+## 4. Cost Optimization & Management
 
-### a. "This site wants to access other services on this device" (Local Network Warning)
-*   **Symptom:** After giving microphone permission and speaking, the browser prompts for permission to access other services or local network devices.
-*   **Diagnosis:** The deployed frontend is hosted on a secure `https://` URL, but the frontend's backend API URL is pointing to a local `http://127.0.0.1:8000` address. Modern browsers block secure public pages from requesting local services (Private Network Access policy) and prompt the user.
-*   **Solution:** Re-deploy the frontend (Step 4) and ensure that `_VITE_API_BASE_URL` is set to your deployed backend's secure `https://` URL.
-
-### b. Permission Denied to Artifact Registry
-*   **Symptom:** The Cloud Build pipeline fails with `Permission "artifactregistry.repositories.uploadArtifacts" denied`.
-*   **Solution:** Grant the **Artifact Registry Writer** role to the Cloud Build service account in your GCP IAM panel.
-
-### c. Container Start Failure (FastAPI / Nginx)
-*   **Symptom:** Cloud Run revision creation fails with: `The user-provided container failed to start and listen on the port...`
-*   **Solution:** Check container configurations. 
-    *   The frontend expects port `80` (managed automatically via Nginx configurations in `cloudbuild.yaml`).
-    *   The backend expects port `8080`. Ensure that the `CMD` in `backend/Dockerfile` dynamically binds to the `$PORT` environment variable:
-        ```dockerfile
-        CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
-        ```
-
-### d. "googlemaps client is not initialized" / "Invalid API key provided"
-*   **Symptom:** The list of doctors does not load when clicking the "Find Specialists" button, and logs report `Failed to initialize Google Maps client: Invalid API key provided.` or `googlemaps client is not initialized.`
-*   **Diagnosis:** Piping raw values or converting byte arrays in Windows PowerShell automatically inserts extra quotes, Carriage Returns (`\r\n`), or Byte Order Marks (BOM), or converts bytes into lists of decimals. When GCP mounts these corrupted values as environment variables, the Python `googlemaps` library's local key format validator rejects them.
-*   **Solution:** Re-upload a clean unquoted version of your key to GCP Secret Manager by creating a temporary ASCII file, uploading it, and removing the file (see Step 3, Point 2).
+* **Scale to 0 (Zero Idle Cost)**: Cloud Run shuts down idle containers automatically, incurring **$0.00** charges when inactive.
+* **Pause Public Access**: Revoke unauthenticated invocation permissions to pause traffic:
+  ```powershell
+  gcloud run services remove-iam-policy-binding carepathai-backend --region=asia-south1 --member="allUsers" --role="roles/run.invoker"
+  ```
+* **Unpause Public Access**:
+  ```powershell
+  gcloud run services add-iam-policy-binding carepathai-backend --region=asia-south1 --member="allUsers" --role="roles/run.invoker"
+  ```
 
 ---
 
-## 5. Operations: Scaling, Costs, and Management
+## 5. Automated CI/CD (GitHub Triggers)
 
-Google Cloud Run is highly cost-efficient and automatically scales down to zero when idle, keeping development and testing costs at **$0.00**.
-
-*   **How Billing/Scaling Works (Scale Down to 0 automatically):**
-    Google Cloud Run automatically shuts down all active container instances when there is no incoming traffic. Therefore, if no one is visiting your website, the service **already scales down to 0 active instances naturally**, costing you exactly **$0.00** without you having to run any commands!
-    
-*   **Pause Services Completely (Disable public internet access):**
-    Because the Knative autoscaler requires `max-instances` to be a positive integer (>= 1), setting `--max-instances=0` is invalid and will throw an error. If you want to **fully disable public traffic** to make the services private (preventing anyone from using them), revoke the public invoke permissions:
-    ```powershell
-    gcloud run services remove-iam-policy-binding carepathai-frontend --region=asia-south1 --member="allUsers" --role="roles/run.invoker"
-    gcloud run services remove-iam-policy-binding carepathai-backend --region=asia-south1 --member="allUsers" --role="roles/run.invoker"
-    ```
-    
-*   **Unpause Services (Restore public internet access):**
-    ```powershell
-    gcloud run services add-iam-policy-binding carepathai-frontend --region=asia-south1 --member="allUsers" --role="roles/run.invoker"
-    gcloud run services add-iam-policy-binding carepathai-backend --region=asia-south1 --member="allUsers" --role="roles/run.invoker"
-    ```
-*   **Optimize Cold Start Latency (Keep minimum 1 warm instance online):**
-    *Note: Keeping a minimum instance active does bypass scaling to zero, which may incur slight billing costs.*
-    ```powershell
-    gcloud run services update carepathai-backend --region=asia-south1 --min-instances=1
-    ```
-
----
-
-## 6. Automated CI/CD (GitHub Trigger)
-
-Once you commit these files to your Git repository, you can configure fully automatic deployments so that every `git push` to your master/main branch triggers a rebuild:
-1.  Go to the **Cloud Build** Console.
-2.  Click **Triggers** -> **Create Trigger**.
-3.  Connect your GitHub repository and choose your main branch.
-4.  Select **Cloud Build Configuration file (yaml)** and point to `/cloudbuild.yaml`.
-5.  Under **Advanced / Substitution variables**, define `_VITE_API_BASE_URL` with your backend URL to ensure automated builds are correctly compiled.
+Connect your GitHub repository to GCP Cloud Build:
+1. Go to **Cloud Build Console** $\rightarrow$ **Triggers** $\rightarrow$ **Create Trigger**.
+2. Connect your GitHub repository and branch (`main` or `v2`).
+3. Select **Cloud Build Configuration file (yaml)** pointing to `/cloudbuild.yaml`.
+4. Add substitution variable `_VITE_API_BASE_URL` with your backend Cloud Run URL.
