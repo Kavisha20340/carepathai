@@ -41,7 +41,7 @@ export const useStore = create((set, get) => ({
   sessionId: generateSessionId(),
   language: restoredLang, // 'en' or 'hi'
   turnCount: 0,
-  maxTurns: 5,
+  maxTurns: 3,
   sessionState: {
     chief_complaint: null,
     body_location: null,

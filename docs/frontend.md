@@ -47,7 +47,7 @@ State is managed globally in a unified Zustand store.
   sessionId: "sess_...",
   language: "en" | "hi" | null,
   turnCount: 0,
-  maxTurns: 5,
+  maxTurns: 3,
   sessionState: {
     chief_complaint: null,
     body_location: null,
