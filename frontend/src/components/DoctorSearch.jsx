@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaMapMarkerAlt, FaSearch, FaStar, FaPhoneAlt, FaDirections } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaSearch, FaStar, FaPhoneAlt, FaDirections, FaCopy, FaCheck } from 'react-icons/fa';
 import { useStore } from '../store/useStore';
 import { translations, specialistTranslations } from '../utils/translations';
 
@@ -11,6 +11,7 @@ export default function DoctorSearch() {
   const [hasSearched, setHasSearched] = useState(false);
   const [coords, setCoords] = useState(null);
   const [locState, setLocState] = useState('idle');
+  const [isCopied, setIsCopied] = useState(false);
 
   const t = translations[language || 'en'];
   const sT = specialistTranslations[language || 'en'];
@@ -69,6 +70,26 @@ export default function DoctorSearch() {
     
     const { min, max } = getMinMaxRating(ratingRange);
     await searchDoctors(triageResult.specialist_type, coords.lat, coords.lng, finalRadius, min, max);
+  };
+
+  const handleCopyDoctors = () => {
+    if (!doctors || doctors.length === 0) return;
+    const isHindi = language === 'hi';
+    let copyText = `${isHindi ? "केयरपाथ एआई - अनुशंसित डॉक्टरों की सूची" : "CarePathAI - Recommended Doctors"}\n`;
+    copyText += `${isHindi ? "विशेषज्ञ" : "Specialist"}: ${translatedSpecialist}\n\n`;
+
+    doctors.forEach((doc, idx) => {
+      copyText += `${idx + 1}. ${doc.name}\n`;
+      copyText += `   ${t.ratingLabel || 'Rating'}: ${doc.rating?.toFixed(1) || "4.5"} ⭐ | ${t.distanceLabel || 'Distance'}: ${doc.distance_km?.toFixed(1)} ${isHindi ? 'किमी' : 'km'}\n`;
+      if (doc.address) copyText += `   ${t.addressLabel || 'Address'}: ${doc.address}\n`;
+      if (doc.phone_number) copyText += `   Phone: ${doc.phone_number}\n`;
+      if (doc.directions_url) copyText += `   ${t.btnMap || 'Map'}: ${doc.directions_url}\n`;
+      copyText += `\n`;
+    });
+
+    navigator.clipboard.writeText(copyText.trim());
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   // Auto-trigger search when filters change if the user has already searched at least once
@@ -209,7 +230,18 @@ export default function DoctorSearch() {
 
       {doctors && doctors.length > 0 ? (
         <div className="flex flex-col gap-4 mt-2">
-          <h3 className="text-sm font-bold text-gray-400 uppercase text-left">{t.recommendedDoctorsHeader}</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-gray-400 uppercase text-left">{t.recommendedDoctorsHeader}</h3>
+            <button
+              type="button"
+              onClick={handleCopyDoctors}
+              className="px-3 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              title={language === 'hi' ? "डॉक्टरों की सूची कॉपी करें" : "Copy doctors list"}
+            >
+              {isCopied ? <FaCheck className="text-emerald-500" /> : <FaCopy />}
+              <span>{isCopied ? (language === 'hi' ? 'कॉपी हो गया!' : 'Copied!') : (language === 'hi' ? 'कॉपी करें' : 'Copy')}</span>
+            </button>
+          </div>
           {doctors.map((doc, idx) => (
             <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-855 text-left">
               <div className="flex justify-between items-start gap-2">
