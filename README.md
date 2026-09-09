@@ -10,4 +10,5 @@ This documentation provides a comprehensive overview of the CarePathAI project, 
 - [**Backend**](./docs/backend.md): Detailed documentation of the backend, including the API specification, safety features, and multilingual capabilities.
 - [**Frontend**](./docs/frontend.md): A guide to the frontend architecture, state management, and hardware integration.
 - [**Deployment**](./docs/deployment.md): A step-by-step guide to deploying the CarePathAI application on Google Cloud Platform.
+- [**MedGemma Service**](./medgemma/README.md): Architecture, deployment, and scaling instructions for the standalone MedGemma CPU Cloud Run service.
 - [**Contributing**](./docs/contributing.md): Guidelines for setting up the development environment and contributing to the project.
