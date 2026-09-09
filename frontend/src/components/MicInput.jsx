@@ -12,6 +12,14 @@ export default function MicInput() {
   const audioChunksRef = useRef([])
   const maxRecordingTimerRef = useRef(null)
   const isDurationExceededRef = useRef(false)
+  const textareaRef = useRef(null)
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`
+    }
+  }, [textInput])
 
   const isModalError = 
     error === translations.en.errNoSpeech || error === translations.hi.errNoSpeech ||
@@ -94,7 +102,7 @@ export default function MicInput() {
           try {
             const txt = await transcribeAudio(blob)
             setRecordState('idle')
-            if (txt) await submitTriageTurn(txt)
+            if (txt) setTextInput(txt)
           } catch (e) { 
             console.error(e) 
             setRecordState('idle')
@@ -208,19 +216,28 @@ export default function MicInput() {
         <p className="font-semibold text-sm tracking-wider uppercase text-gray-500">{btnLabel}</p>
       </div>
 
-      <form onSubmit={handleTextSubmit} className="flex gap-2 mt-4 max-w-lg mx-auto w-full">
-        <input
-          type="text"
+      <form onSubmit={handleTextSubmit} className="flex gap-2 items-end mt-4 max-w-lg mx-auto w-full">
+        <textarea
+          ref={textareaRef}
+          rows={1}
           value={textInput}
           onChange={(e) => setTextInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              if (textInput.trim() && !isLoading && recordState === 'idle') {
+                handleTextSubmit(e)
+              }
+            }
+          }}
           placeholder={isHindi ? "अपने लक्षण यहाँ लिखें या माइक्रोफ़ोन दबाएँ..." : "Type your symptoms here or tap microphone..."}
           disabled={isLoading || recordState !== 'idle'}
-          className="flex-grow px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 rounded-xl focus:outline-none text-gray-800 dark:text-gray-200"
+          className="flex-grow px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none text-gray-800 dark:text-gray-200 resize-none min-h-[48px] max-h-[160px] overflow-y-auto leading-normal"
         />
         <button
           type="submit"
           disabled={!textInput.trim() || isLoading || recordState !== 'idle'}
-          className="px-5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl flex items-center justify-center"
+          className="px-5 h-[48px] bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white rounded-xl flex items-center justify-center flex-shrink-0"
         >
           <FaPaperPlane />
         </button>

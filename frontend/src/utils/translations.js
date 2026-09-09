@@ -134,7 +134,7 @@ export const translations = {
     severity: "दर्द की तीव्रता",
     associatedSymptoms: "संबंधित लक्षण",
     aggravatingFactors: "बढ़ाने वाले कारक",
-    urgencyLevel: "गंभीरता/आपातकालीन स्तर",
+    urgencyLevel: "गंभीरता",
     specialistType: "अनुशंसित विशेषज्ञ",
     confidence: "विश्वास स्तर",
     reasoningSummary: "कारण का सारांश",
