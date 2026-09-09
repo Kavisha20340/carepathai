@@ -28,8 +28,11 @@ genai_client = None
 
 try:
     from google import genai
-    project_id = os.getenv("GCP_PROJECT", "carepathai")
-    genai_client = genai.Client(vertexai=True, project=project_id, location="us-central1")
+    project_id = os.getenv("GCP_PROJECT") or os.getenv("GOOGLE_CLOUD_PROJECT")
+    if project_id:
+        genai_client = genai.Client(vertexai=True, project=project_id, location="us-central1")
+    else:
+        genai_client = genai.Client(vertexai=True, location="us-central1")
     # Quick probe test
     genai_client.models.generate_content(model="gemini-2.5-flash", contents="ping")
     logger.info("Successfully initialized Vertex AI Gemini 2.5 Flash client.")
@@ -47,7 +50,8 @@ if translate is not None:
 
 if firestore is not None:
     try:
-        db = firestore.Client(project="carepathai")
+        project_id = os.getenv("GCP_PROJECT") or os.getenv("GOOGLE_CLOUD_PROJECT")
+        db = firestore.Client(project=project_id) if project_id else firestore.Client()
         logger.info("Successfully initialized Firestore client for translation caching.")
     except Exception as e:
         logger.warning(f"Firestore client init failed: {e}. Caching will be bypassed.")

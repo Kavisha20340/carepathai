@@ -32,7 +32,7 @@ The default configuration in the `Dockerfile` uses `unsloth/medgemma-4b-it-GGUF`
 2. Authenticate and set your active project:
    ```cmd
    gcloud auth login
-   gcloud config set project carepathai
+   gcloud config set project <YOUR_GCP_PROJECT_ID>
    ```
 3. Navigate to the `medgemma` directory from the repository root:
    ```cmd
@@ -68,14 +68,14 @@ gcloud services enable cloudbuild.googleapis.com
 Submit the build context from the `medgemma` directory to Google Cloud Build. This downloads the quantized model and builds the container image in GCP:
 
 ```bash
-gcloud builds submit --tag asia-south2-docker.pkg.dev/carepathai/medgemma-repo/medgemma-cpu --timeout=1800s .
+gcloud builds submit --tag asia-south2-docker.pkg.dev/<YOUR_GCP_PROJECT_ID>/medgemma-repo/medgemma-cpu --timeout=1800s .
 ```
 
 ### Step 5: Deploy to Google Cloud Run
 Deploy the container to Cloud Run with 8 vCPUs, 8GiB RAM, CPU boost, and 8 inference threads:
 
 ```bash
-gcloud run deploy medgemma-cpu --image=asia-south2-docker.pkg.dev/carepathai/medgemma-repo/medgemma-cpu --region=asia-south2 --cpu=8 --memory=8Gi --timeout=300 --concurrency=1 --min-instances=1 --max-instances=2 --cpu-boost --set-env-vars=N_THREADS=8 --allow-unauthenticated
+gcloud run deploy medgemma-cpu --image=asia-south2-docker.pkg.dev/<YOUR_GCP_PROJECT_ID>/medgemma-repo/medgemma-cpu --region=asia-south2 --cpu=8 --memory=8Gi --timeout=300 --concurrency=1 --min-instances=1 --max-instances=2 --cpu-boost --set-env-vars=N_THREADS=8 --allow-unauthenticated
 ```
 
 #### Deployment Flags Explained:
@@ -145,10 +145,10 @@ gcloud auth configure-docker asia-south2-docker.pkg.dev
 gcloud services enable cloudbuild.googleapis.com
 
 # 4. Build & Push Image via Cloud Build
-gcloud builds submit --tag asia-south2-docker.pkg.dev/carepathai/medgemma-repo/medgemma-cpu --timeout=1800s .
+gcloud builds submit --tag asia-south2-docker.pkg.dev/<YOUR_GCP_PROJECT_ID>/medgemma-repo/medgemma-cpu --timeout=1800s .
 
 # 5. Deploy Service to Cloud Run
-gcloud run deploy medgemma-cpu --image=asia-south2-docker.pkg.dev/carepathai/medgemma-repo/medgemma-cpu --region=asia-south2 --cpu=8 --memory=8Gi --timeout=300 --concurrency=1 --min-instances=1 --max-instances=2 --cpu-boost --set-env-vars=N_THREADS=8 --allow-unauthenticated
+gcloud run deploy medgemma-cpu --image=asia-south2-docker.pkg.dev/<YOUR_GCP_PROJECT_ID>/medgemma-repo/medgemma-cpu --region=asia-south2 --cpu=8 --memory=8Gi --timeout=300 --concurrency=1 --min-instances=1 --max-instances=2 --cpu-boost --set-env-vars=N_THREADS=8 --allow-unauthenticated
 
 # 6. Scale Down (Cost-saving, min instances = 0)
 gcloud run services update medgemma-cpu --region=asia-south2 --min-instances=0

@@ -8,13 +8,12 @@ Thank you for your interest in contributing to CarePathAI! This guide will help 
 
 **1. Virtual Environment Setup**
 
-From the root of the workspace (`C:\Users\kavgupta5\DEV\carepathai`), create a Python virtual environment to manage dependencies cleanly.
+From the root of the workspace directory, create a Python virtual environment to manage dependencies cleanly.
 
 *   **Create the Virtual Environment:**
 
     ```powershell
-    # Using the Google Cloud SDK's bundled Python
-    & "C:\Users\kavgupta5\AppData\Local\Google\Cloud SDK\google-cloud-sdk\platform\bundledpython\python.exe" -m venv .venv
+    python -m venv .venv
     ```
 
 *   **Activate the Virtual Environment:**

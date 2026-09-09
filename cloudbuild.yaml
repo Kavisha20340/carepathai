@@ -4,13 +4,13 @@ steps:
     args: [
       'build',
       '--build-arg', 'VITE_API_BASE_URL=$_VITE_API_BASE_URL',
-      '-t', 'asia-south1-docker.pkg.dev/carepathai/carepathai-repo/carepathai-frontend:$BUILD_ID',
+      '-t', 'asia-south1-docker.pkg.dev/$PROJECT_ID/carepathai-repo/carepathai-frontend:$BUILD_ID',
       './frontend'
     ]
 
   # Push the container image to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'asia-south1-docker.pkg.dev/carepathai/carepathai-repo/carepathai-frontend:$BUILD_ID']
+    args: ['push', 'asia-south1-docker.pkg.dev/$PROJECT_ID/carepathai-repo/carepathai-frontend:$BUILD_ID']
 
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -19,16 +19,17 @@ steps:
       - 'run'
       - 'deploy'
       - 'carepathai-frontend'
-      - '--image=asia-south1-docker.pkg.dev/carepathai/carepathai-repo/carepathai-frontend:$BUILD_ID'
+      - '--image=asia-south1-docker.pkg.dev/$PROJECT_ID/carepathai-repo/carepathai-frontend:$BUILD_ID'
       - '--region=asia-south1'
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--port=80'
 
 images:
-  - 'asia-south1-docker.pkg.dev/carepathai/carepathai-repo/carepathai-frontend:$BUILD_ID'
+  - 'asia-south1-docker.pkg.dev/$PROJECT_ID/carepathai-repo/carepathai-frontend:$BUILD_ID'
 
 substitutions:
   _VITE_API_BASE_URL: ''
+
 
 
