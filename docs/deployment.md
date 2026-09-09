@@ -36,14 +36,17 @@ gcloud config set project <YOUR_GCP_PROJECT_ID>
 ```
 
 ### Step 2: Deploy Backend to Cloud Run
+Run this command to containerize, configure environment variables, mount Secret Manager secrets, and deploy the backend to Cloud Run in `asia-south2`:
+
 ```powershell
 gcloud run deploy carepathai-backend `
   --source=./backend `
-  --region=asia-south1 `
+  --region=asia-south2 `
   --allow-unauthenticated `
-  --set-env-vars=GCP_PROJECT=<YOUR_GCP_PROJECT_ID>,MEDGEMMA_API_URL=https://medgemma-cpu-xxxxx.a.run.app/generate
+  --set-env-vars=GCP_PROJECT=<YOUR_GCP_PROJECT_ID>,MEDGEMMA_API_URL=https://medgemma-cpu-xxxxx.asia-south2.run.app/generate `
+  --set-secrets=PLACES_API_KEY=PLACES_API_KEY:latest
 ```
-*Note the returned Backend Service URL (e.g. `https://carepathai-backend-[PROJECT_NUMBER].asia-south1.run.app`).*
+*Note the returned Backend Service URL (e.g. `https://carepathai-backend-[PROJECT_NUMBER].asia-south2.run.app`).*
 
 ### Step 2b: Grant IAM Permissions
 ```powershell
@@ -78,7 +81,7 @@ Sensitive keys (`PLACES_API_KEY`) are stored in Secret Manager and mounted dynam
      --role="roles/secretmanager.secretAccessor"
 
    gcloud run services update carepathai-backend `
-     --region=asia-south1 `
+     --region=asia-south2 `
      --set-secrets=PLACES_API_KEY=PLACES_API_KEY:latest
    ```
 
@@ -86,7 +89,7 @@ Sensitive keys (`PLACES_API_KEY`) are stored in Secret Manager and mounted dynam
 Build and deploy the frontend container, binding the backend API URL:
 
 ```powershell
-gcloud builds submit --config=cloudbuild.yaml --substitutions=_VITE_API_BASE_URL="https://carepathai-backend-[PROJECT_NUMBER].asia-south1.run.app" .
+gcloud builds submit --config=cloudbuild.yaml --substitutions=_VITE_API_BASE_URL="https://carepathai-backend-[PROJECT_NUMBER].asia-south2.run.app" .
 ```
 
 ---
@@ -98,7 +101,7 @@ gcloud builds submit --config=cloudbuild.yaml --substitutions=_VITE_API_BASE_URL
 | **404 on Refresh in Frontend** | Single-page application route missing Nginx fallback | Solved by `/frontend/nginx.conf` (`try_files $uri $uri/ /index.html;`). |
 | **CORS Error on API Call** | Cross-Origin Request blocked or URL mismatch | Ensure `_VITE_API_BASE_URL` uses `https://` backend URL during frontend Cloud Build. |
 | **Google Places Invalid API Key** | Secret key corrupted by PowerShell newline encoding | Upload key as ASCII with `-NoNewline` via `Set-Content` file buffer. |
-| **Cold Start Latency** | Cloud Run scaling to 0 idle instances | Scale to 1 warm min instance: `gcloud run services update carepathai-backend --region=asia-south1 --min-instances=1`. |
+| **Cold Start Latency** | Cloud Run scaling to 0 idle instances | Scale to 1 warm min instance: `gcloud run services update carepathai-backend --region=asia-south2 --min-instances=1`. |
 
 ---
 
@@ -107,11 +110,11 @@ gcloud builds submit --config=cloudbuild.yaml --substitutions=_VITE_API_BASE_URL
 * **Scale to 0 (Zero Idle Cost)**: Cloud Run shuts down idle containers automatically, incurring **$0.00** charges when inactive.
 * **Pause Public Access**: Revoke unauthenticated invocation permissions to pause traffic:
   ```powershell
-  gcloud run services remove-iam-policy-binding carepathai-backend --region=asia-south1 --member="allUsers" --role="roles/run.invoker"
+  gcloud run services remove-iam-policy-binding carepathai-backend --region=asia-south2 --member="allUsers" --role="roles/run.invoker"
   ```
 * **Unpause Public Access**:
   ```powershell
-  gcloud run services add-iam-policy-binding carepathai-backend --region=asia-south1 --member="allUsers" --role="roles/run.invoker"
+  gcloud run services add-iam-policy-binding carepathai-backend --region=asia-south2 --member="allUsers" --role="roles/run.invoker"
   ```
 
 ---
