@@ -24,7 +24,10 @@ function AppContent() {
     if (location.pathname === '/triage' && !language) {
       navigate('/', { replace: true });
     }
-  }, [language, location.pathname, navigate]);
+    if (emergencyMessage && location.pathname !== '/triage') {
+      navigate('/triage');
+    }
+  }, [language, location.pathname, navigate, emergencyMessage]);
 
   const handleResetDemo = () => {
     resetSession(true);
@@ -51,8 +54,6 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 flex flex-col font-sans transition-colors duration-200">
-      <EmergencyOverlay />
-
       <header className="sticky top-0 z-50 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md py-2 border-b border-gray-100 dark:border-gray-800/40">
         <div className="mx-auto w-full max-w-2xl px-6 md:px-10 flex items-center justify-between transition-all duration-300">
           <div className="w-full mx-auto max-w-xl flex items-center justify-between">
@@ -123,7 +124,9 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/triage" element={
-            !triageResult ? (
+            emergencyMessage ? (
+              <EmergencyOverlay />
+            ) : !triageResult ? (
               <div className="w-full max-w-2xl mx-auto flex flex-col bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-800 overflow-hidden animate-fadeIn">
                 <ConversationDisplay />
                 <MicInput />
