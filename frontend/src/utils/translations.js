@@ -232,6 +232,20 @@ export const specialistTranslations = {
 };
 
 export const slotValueTranslations = {
+  // None / Unknown / Not Reported variations
+  "none": "कोई नहीं",
+  "none reported": "कोई विशेष कारक नहीं",
+  "no reported": "कोई विशेष कारक नहीं",
+  "not reported": "कोई नहीं बताया गया",
+  "unknown": "अज्ञात",
+  "not specified": "निर्दिष्ट नहीं",
+  "none specified": "निर्दिष्ट नहीं",
+  "no aggravating factors": "कोई विशेष कारक नहीं",
+  "no aggravating factors reported": "कोई विशेष कारक नहीं",
+  "koi report nahi": "कोई विशेष कारक नहीं",
+  "कोई रिपोर्ट नहीं": "कोई विशेष कारक नहीं",
+  "कोई रिपोर्ट नहीं की गई": "कोई विशेष कारक नहीं",
+
   // Onset values
   "sudden": "अचानक",
   "gradual": "धीरे-धीरे",

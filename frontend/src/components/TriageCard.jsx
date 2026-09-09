@@ -5,11 +5,27 @@ import { translations, specialistTranslations, slotValueTranslations } from '../
 
 const getTranslatedSlotVal = (val, lang) => {
   if (val === null || val === undefined) return '';
-  const strVal = val.toString();
-  if (lang !== 'hi') return strVal;
-  const keyLower = strVal.toLowerCase().trim();
+  const strVal = val.toString().trim();
+  const keyLower = strVal.toLowerCase();
+
+  // Handle English non-reported / unknown values
+  if (lang !== 'hi') {
+    if (['no reported', 'none reported', 'not reported', 'none specified', 'unknown'].includes(keyLower)) {
+      return 'None reported';
+    }
+    return strVal;
+  }
+
+  // Handle Hindi translation lookups and clean overrides
   const dict = typeof slotValueTranslations !== 'undefined' ? slotValueTranslations : {};
-  return dict[keyLower] || strVal;
+  if (dict[keyLower]) return dict[keyLower];
+  
+  // Clean fallback for raw Google Translate artifacts in Hindi
+  if (['none', 'none reported', 'no reported', 'not reported', 'unknown', 'koi report nahi', 'कोई रिपोर्ट नहीं', 'कोई रिपोर्ट नहीं की गई'].includes(keyLower)) {
+    return 'कोई विशेष कारक नहीं';
+  }
+
+  return strVal;
 };
 
 export default function TriageCard() {

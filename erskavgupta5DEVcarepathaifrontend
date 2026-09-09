@@ -1,0 +1,97 @@
+[1mdiff --git a/frontend/src/components/TriageCard.jsx b/frontend/src/components/TriageCard.jsx[m
+[1mindex d51ae0a..0b3ffb5 100644[m
+[1m--- a/frontend/src/components/TriageCard.jsx[m
+[1m+++ b/frontend/src/components/TriageCard.jsx[m
+[36m@@ -5,11 +5,27 @@[m [mimport { translations, specialistTranslations, slotValueTranslations } from '../[m
+ [m
+ const getTranslatedSlotVal = (val, lang) => {[m
+   if (val === null || val === undefined) return '';[m
+[31m-  const strVal = val.toString();[m
+[31m-  if (lang !== 'hi') return strVal;[m
+[31m-  const keyLower = strVal.toLowerCase().trim();[m
+[32m+[m[32m  const strVal = val.toString().trim();[m
+[32m+[m[32m  const keyLower = strVal.toLowerCase();[m
+[32m+[m
+[32m+[m[32m  // Handle English non-reported / unknown values[m
+[32m+[m[32m  if (lang !== 'hi') {[m
+[32m+[m[32m    if (['no reported', 'none reported', 'not reported', 'none specified', 'unknown'].includes(keyLower)) {[m
+[32m+[m[32m      return 'None reported';[m
+[32m+[m[32m    }[m
+[32m+[m[32m    return strVal;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  // Handle Hindi translation lookups and clean overrides[m
+   const dict = typeof slotValueTranslations !== 'undefined' ? slotValueTranslations : {};[m
+[31m-  return dict[keyLower] || strVal;[m
+[32m+[m[32m  if (dict[keyLower]) return dict[keyLower];[m
+[32m+[m[41m  [m
+[32m+[m[32m  // Clean fallback for raw Google Translate artifacts in Hindi[m
+[32m+[m[32m  if (['none', 'none reported', 'no reported', 'not reported', 'unknown', 'koi report nahi', 'कोई रिपोर्ट नहीं', 'कोई रिपोर्ट नहीं की गई'].includes(keyLower)) {[m
+[32m+[m[32m    return 'कोई विशेष कारक नहीं';[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  return strVal;[m
+ };[m
+ [m
+ export default function TriageCard() {[m
+[1mdiff --git a/frontend/src/utils/reportGenerator.js b/frontend/src/utils/reportGenerator.js[m
+[1mindex 5bfe9c4..d15c5fc 100644[m
+[1m--- a/frontend/src/utils/reportGenerator.js[m
+[1m+++ b/frontend/src/utils/reportGenerator.js[m
+[36m@@ -2,11 +2,27 @@[m [mimport { translations, specialistTranslations, slotValueTranslations } from './t[m
+ [m
+ const getTranslatedSlotVal = (val, lang) => {[m
+   if (val === null || val === undefined) return '';[m
+[31m-  const strVal = val.toString();[m
+[31m-  if (lang !== 'hi') return strVal;[m
+[31m-  const keyLower = strVal.toLowerCase().trim();[m
+[32m+[m[32m  const strVal = val.toString().trim();[m
+[32m+[m[32m  const keyLower = strVal.toLowerCase();[m
+[32m+[m
+[32m+[m[32m  // Handle English non-reported / unknown values[m
+[32m+[m[32m  if (lang !== 'hi') {[m
+[32m+[m[32m    if (['no reported', 'none reported', 'not reported', 'none specified', 'unknown'].includes(keyLower)) {[m
+[32m+[m[32m      return 'None reported';[m
+[32m+[m[32m    }[m
+[32m+[m[32m    return strVal;[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  // Handle Hindi translation lookups and clean overrides[m
+   const dict = typeof slotValueTranslations !== 'undefined' ? slotValueTranslations : {};[m
+[31m-  return dict[keyLower] || strVal;[m
+[32m+[m[32m  if (dict[keyLower]) return dict[keyLower];[m
+[32m+[m[41m  [m
+[32m+[m[32m  // Clean fallback for raw Google Translate artifacts in Hindi[m
+[32m+[m[32m  if (['none', 'none reported', 'no reported', 'not reported', 'unknown', 'koi report nahi', 'कोई रिपोर्ट नहीं', 'कोई रिपोर्ट नहीं की गई'].includes(keyLower)) {[m
+[32m+[m[32m    return 'कोई विशेष कारक नहीं';[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  return strVal;[m
+ };[m
+ [m
+ export const generateAndPrintReport = ({[m
+[1mdiff --git a/frontend/src/utils/translations.js b/frontend/src/utils/translations.js[m
+[1mindex 6ffb567..74fb3bc 100644[m
+[1m--- a/frontend/src/utils/translations.js[m
+[1m+++ b/frontend/src/utils/translations.js[m
+[36m@@ -232,6 +232,20 @@[m [mexport const specialistTranslations = {[m
+ };[m
+ [m
+ export const slotValueTranslations = {[m
+[32m+[m[32m  // None / Unknown / Not Reported variations[m
+[32m+[m[32m  "none": "कोई नहीं",[m
+[32m+[m[32m  "none reported": "कोई विशेष कारक नहीं",[m
+[32m+[m[32m  "no reported": "कोई विशेष कारक नहीं",[m
+[32m+[m[32m  "not reported": "कोई नहीं बताया गया",[m
+[32m+[m[32m  "unknown": "अज्ञात",[m
+[32m+[m[32m  "not specified": "निर्दिष्ट नहीं",[m
+[32m+[m[32m  "none specified": "निर्दिष्ट नहीं",[m
+[32m+[m[32m  "no aggravating factors": "कोई विशेष कारक नहीं",[m
+[32m+[m[32m  "no aggravating factors reported": "कोई विशेष कारक नहीं",[m
+[32m+[m[32m  "koi report nahi": "कोई विशेष कारक नहीं",[m
+[32m+[m[32m  "कोई रिपोर्ट नहीं": "कोई विशेष कारक नहीं",[m
+[32m+[m[32m  "कोई रिपोर्ट नहीं की गई": "कोई विशेष कारक नहीं",[m
+[32m+[m
+   // Onset values[m
+   "sudden": "अचानक",[m
+   "gradual": "धीरे-धीरे",[m
