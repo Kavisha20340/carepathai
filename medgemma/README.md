@@ -26,15 +26,16 @@ The default configuration in the `Dockerfile` uses `unsloth/medgemma-4b-it-GGUF`
 
 ---
 
-## 3. Prerequisites
+## 3. Prerequisites & Environment Navigation
 
-1. **Google Cloud SDK (`gcloud` CLI)** installed and logged in:
-   ```bash
+1. Launch **Google Cloud SDK Shell** or open your terminal.
+2. Authenticate and set your active project:
+   ```cmd
    gcloud auth login
    gcloud config set project carepathai
    ```
-2. Open Google Cloud SDK Shell or Terminal and enter the `medgemma` directory:
-   ```bash
+3. Navigate to the `medgemma` directory from the repository root:
+   ```cmd
    cd medgemma
    ```
 
@@ -130,7 +131,10 @@ curl -X POST "$SERVICE_URL/generate" \
 
 ## 7. Quick Reference: All Commands in Sequence
 
-```bash
+```cmd
+# 0. Open Google Cloud SDK Shell and navigate into medgemma directory from repo root
+cd medgemma
+
 # 1. Create Repository
 gcloud artifacts repositories create medgemma-repo --repository-format=docker --location=asia-south2
 
@@ -140,10 +144,10 @@ gcloud auth configure-docker asia-south2-docker.pkg.dev
 # 3. Enable Cloud Build API
 gcloud services enable cloudbuild.googleapis.com
 
-# 4. Build & Push Image (run from medgemma directory)
+# 4. Build & Push Image via Cloud Build
 gcloud builds submit --tag asia-south2-docker.pkg.dev/carepathai/medgemma-repo/medgemma-cpu --timeout=1800s .
 
-# 5. Deploy Service
+# 5. Deploy Service to Cloud Run
 gcloud run deploy medgemma-cpu --image=asia-south2-docker.pkg.dev/carepathai/medgemma-repo/medgemma-cpu --region=asia-south2 --cpu=8 --memory=8Gi --timeout=300 --concurrency=1 --min-instances=1 --max-instances=2 --cpu-boost --set-env-vars=N_THREADS=8 --allow-unauthenticated
 
 # 6. Scale Down (Cost-saving, min instances = 0)
