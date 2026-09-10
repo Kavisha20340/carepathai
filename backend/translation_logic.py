@@ -30,11 +30,11 @@ try:
     from google import genai
     project_id = os.getenv("GCP_PROJECT") or os.getenv("GOOGLE_CLOUD_PROJECT")
     if project_id:
-        genai_client = genai.Client(vertexai=True, project=project_id, location="us-central1")
+        genai_client = genai.Client(vertexai=True, project=project_id, location="asia-south1")
     else:
-        genai_client = genai.Client(vertexai=True, location="us-central1")
+        genai_client = genai.Client(vertexai=True, location="asia-south1")
     # Quick probe test
-    genai_client.models.generate_content(model="gemini-2.5-flash", contents="ping")
+    genai_client.models.generate_content(model="gemini-3.5-flash", contents="ping")
     logger.info("Successfully initialized Vertex AI Gemini 2.5 Flash client.")
 except Exception as gem_err:
     logger.info(f"Vertex AI Gemini client init failed: {gem_err}. Will fallback gracefully.")
@@ -75,7 +75,7 @@ def translate_via_gemini(text: str, target_language: str) -> str:
             f"Preserve clinical accuracy. Output ONLY the translation text without quotes or explanations.\n\n"
             f"Text:\n{text}"
         )
-        response = genai_client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        response = genai_client.models.generate_content(model="gemini-3.5-flash", contents=prompt)
         translated = response.text.strip() if response and response.text else text
         return translated
     except Exception as e:
@@ -111,7 +111,7 @@ def denoise_transcript_with_context(raw_transcript: str, conversation_history: l
             f"4. Output ONLY the cleaned transcript string. No quotes, markdown, or explanations.\n"
         )
         logger.info(f"===> [OUTGOING API CALL: Gemini STT Denoiser] Raw: '{raw_transcript}' | Lang: '{language}'")
-        response = genai_client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        response = genai_client.models.generate_content(model="gemini-3.5-flash", contents=prompt)
         if response and response.text:
             cleaned = response.text.strip().strip('"').strip("'")
             logger.info(f"<=== [INCOMING API RESPONSE: Gemini STT Denoiser] Denoised: '{cleaned}'")
