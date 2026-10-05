@@ -50,4 +50,6 @@
 - [**Deployment Guide**](./docs/deployment.md): Step-by-step GCP Cloud Run dual-service deployment with Cloud Build (`$PROJECT_ID`) and Secret Manager.
 - [**MedGemma Service**](./medgemma/README.md): Dockerization, GGUF model baking, and Cloud Run CPU scaling (`min-instances` cost management).
 - [**Contributing Guide**](./docs/contributing.md): Local environment setup, virtual environments, unit/integration testing suite, and conventions.
+- [**Demo Video**](./docs/CarePathAI_DEMO_Video.mp4)
+- [**Submission Word Doc**](./docs/CarePathAI_Submission_Word.docx)
 
