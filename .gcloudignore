@@ -1,0 +1,30 @@
+# This file specifies patterns that should be ignored when uploading source
+# to Google Cloud Build.
+# Reference: https://cloud.google.com/sdk/gcloud/reference/topic/gcloudignore
+
+# Ignore git folder
+.git/
+.gitignore
+
+# Ignore node modules and build outputs
+node_modules/
+dist/
+build/
+
+# Ignore local environment variables
+.env
+.env.local
+.env.production
+.env.development
+
+# Ignore python virtual environments and cache
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+*.pyc
+
+# Ignore IDE settings
+.vscode/
+.idea/

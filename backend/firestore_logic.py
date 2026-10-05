@@ -1,0 +1,105 @@
+import logging
+from typing import Optional, Dict, Any
+import firebase_admin
+from firebase_admin import credentials, firestore
+from dotenv import load_dotenv
+
+# Load environment variables (.env contains GOOGLE_APPLICATION_CREDENTIALS)
+load_dotenv()
+
+logger = logging.getLogger(__name__)
+
+# Initialize Firebase Admin SDK safely
+db = None
+_local_sessions: Dict[str, Dict[str, Any]] = {}
+
+try:
+    if not firebase_admin._apps:
+        # If GOOGLE_APPLICATION_CREDENTIALS is set in .env or active in shell,
+        # initialize_app() automatically uses it natively.
+        firebase_admin.initialize_app()
+        logger.info("Firebase Admin SDK initialized successfully.")
+    
+    db = firestore.client()
+    logger.info("Firestore client connected successfully.")
+except Exception as e:
+    logger.error(f"Failed to initialize Firebase / Firestore: {e}. Running in local mock mode.")
+
+def get_session(session_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Fetches the session state and metadata from Firestore or local memory fallback for a given session_id.
+    Returns the document dict if found, else None.
+    """
+    if db is None:
+        return _local_sessions.get(session_id)
+        
+    try:
+        doc_ref = db.collection("sessions").document(session_id)
+        doc = doc_ref.get()
+        if doc.exists:
+            logger.info(f"Retrieved session document for ID: {session_id}")
+            return doc.to_dict()
+        else:
+            logger.info(f"No existing session document found in Firestore for ID: {session_id}. Checking local memory.")
+            return _local_sessions.get(session_id)
+    except Exception as e:
+        logger.error(f"Error fetching session {session_id} from Firestore: {e}. Falling back to local memory.")
+        return _local_sessions.get(session_id)
+
+def update_session(session_id: str, uid: str, session_state: dict, turn_count: int, conversation_history: list, triage_result: Optional[dict] = None) -> bool:
+    """
+    Persists or updates the session document in Firestore and local in-memory fallback store.
+    Document schema matches: {uid, session_state, turn_count, conversation_history, triage_result, timestamp}
+    """
+    payload = {
+        "uid": uid,
+        "session_state": session_state,
+        "turn_count": turn_count,
+        "conversation_history": conversation_history,
+        "triage_result": triage_result,
+        "timestamp": firestore.SERVER_TIMESTAMP if firestore else None
+    }
+    
+    # Store in local memory for instant fallback / local development
+    _local_sessions[session_id] = payload
+
+    if db is None:
+        logger.info(f"Updated local in-memory session for ID: {session_id}")
+        return True
+        
+    try:
+        doc_ref = db.collection("sessions").document(session_id)
+        doc_ref.set(payload, merge=True)
+        logger.info(f"Successfully updated Firestore session document for ID: {session_id}")
+        return True
+    except Exception as e:
+        logger.error(f"Error updating session {session_id} in Firestore: {e}", exc_info=True)
+        return False
+
+
+def save_report_trace(session_id: str, language: str, report_text: str) -> bool:
+    """
+    Appends a timestamped report download trace to the session's 'download_history' array in Firestore.
+    """
+    if db is None:
+        logger.warning("Firestore is not initialized. save_report_trace skipping.")
+        return False
+        
+    try:
+        from datetime import datetime, timezone
+        doc_ref = db.collection("sessions").document(session_id)
+        trace_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "language": language,
+            "report_text": report_text
+        }
+        doc_ref.set({
+            "download_history": firestore.ArrayUnion([trace_entry])
+        }, merge=True)
+        logger.info(f"Successfully saved report download trace for session ID: {session_id}")
+        return True
+    except Exception as e:
+        logger.error(f"Error saving report trace for session {session_id} in Firestore: {e}", exc_info=True)
+        return False
+
+
